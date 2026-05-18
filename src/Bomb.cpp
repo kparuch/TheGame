@@ -31,9 +31,6 @@ void Bomb::updateAnimation() {
         currentBombState = BombState::LightUp;
         row = 1;
 
-        // Zamiast sleep_for używamy prostej matematyki!
-        // Dzielimy czas przez 0.4 sekundy i sprawdzamy, czy wynik jest parzysty czy nie.
-        // Dzięki temu klatka (col) płynnie skacze między 0 a 1 bez zatrzymywania gry.
         int currentFrame = static_cast<int>(time / 0.4f);
         col = currentFrame % 2;
     }
