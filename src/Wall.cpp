@@ -3,7 +3,7 @@ Wall::Wall(float x, float y, const sf::Texture& texture):sprite(texture){
 	sprite.setPosition({ x,y });
 	sprite.setScale({ 0.25f,0.25f });
 };
-void Wall::update(const std::vector<std::unique_ptr<Entity>>& entities) {
+void Wall::update(std::vector<std::unique_ptr<Entity>>& entities) {
 
 }
 

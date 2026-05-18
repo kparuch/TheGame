@@ -14,6 +14,8 @@ private:
 	sf::Texture crateTexture;
 	sf::Texture floorTexture;
 	sf::Texture playerTexture;
+	sf::Texture bombTexture;
+	sf::Texture explosionTexture;
 	std::vector<std::unique_ptr<Entity>>gameObjs;
 	void loadLevel();
 public:

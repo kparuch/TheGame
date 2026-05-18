@@ -19,9 +19,11 @@
     </ProjectConfiguration>
   </ItemGroup>
   <ItemGroup>
+    <ClCompile Include="src\Bomb.cpp" />
     <ClCompile Include="src\Crate.cpp" />
     <ClCompile Include="src\Enemy.cpp" />
     <ClCompile Include="src\Entity.cpp" />
+    <ClCompile Include="src\ExplosionArea.cpp" />
     <ClCompile Include="src\Floor.cpp" />
     <ClCompile Include="src\Game.cpp" />
     <ClCompile Include="src\main.cpp" />
@@ -30,8 +32,10 @@
     <ClCompile Include="src\Wall.cpp" />
   </ItemGroup>
   <ItemGroup>
+    <ClInclude Include="include\Bomb.h" />
     <ClInclude Include="include\Crate.h" />
     <ClInclude Include="include\Entity.h" />
+    <ClInclude Include="include\ExplosionArea.h" />
     <ClInclude Include="include\Floor.h" />
     <ClInclude Include="include\Game.h" />
     <ClInclude Include="include\Player.h" />
