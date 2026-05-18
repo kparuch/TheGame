@@ -4,6 +4,7 @@
 #include "Floor.h"
 #include "Crate.h"
 #include "Player.h"
+#include "algorithm"
 
 Game::Game() {
 	window.create(sf::VideoMode({ 1400,900 }), "Soyman II The Way of the Bomb ");
@@ -19,6 +20,12 @@ Game::Game() {
 	}
 	if (!playerTexture.loadFromFile("assets/chudPlayer.png")) {
 		std::cout << "error in idWall loading;\n";
+	}
+	if (!bombTexture.loadFromFile("assets/bomb.png")) {
+		std::cout << "errr while loading bomb text\n";
+	}
+	if (!explosionTexture.loadFromFile("assets/boomver00.png")) {
+		std::cout << "errr while loading bomb text\n";
 	}
 	loadLevel();
 };
@@ -45,9 +52,15 @@ void Game::render() {
 	window.display();
 }
 void Game::update(){
-	for (auto& obj : gameObjs) {
-		obj->update(gameObjs);
+	for (uint16_t i = 0; i < gameObjs.size(); ++i){
+		gameObjs[i]->update(gameObjs);
 	}
+	gameObjs.erase(
+		std::remove_if(gameObjs.begin(), gameObjs.end(),
+			[](const std::unique_ptr<Entity>& obj) {return obj->isDestroyed();}
+		), gameObjs.end()
+
+	);
 }
 void Game::loadLevel() {
 	//level 1 -> more to come 
@@ -77,7 +90,7 @@ void Game::loadLevel() {
 
 			gameObjs.push_back(std::make_unique<Floor>(posX, posY, floorTexture));
 			if (map[y][x] == 'P') {
-				// Zamiast tworzyć gracza teraz, zapisujemy jego pozycję
+			
 				playerPosX = posX;
 				playerPosY = posY;
 				playerDetected = true;
@@ -91,8 +104,8 @@ void Game::loadLevel() {
 			}
 		}
 	}
+	
 	if (playerDetected) {
-		gameObjs.push_back(std::make_unique<Player>(playerPosX, playerPosY, playerTexture));
+		gameObjs.push_back(std::make_unique<Player>(playerPosX, playerPosY, playerTexture, bombTexture, explosionTexture));
 	}
-
 }

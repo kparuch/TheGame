@@ -6,7 +6,7 @@ private:
 	sf::Sprite sprite;
 public:
 	Wall(float x, float y, const sf::Texture& texture);
-	void update(const std::vector<std::unique_ptr<Entity>>& entities) override;
+	void update(std::vector<std::unique_ptr<Entity>>& entities) override;
 	sf::FloatRect getBounds() const override;
 	bool isSolid() const override { return true; }
 	void draw(sf::RenderWindow& window) override;

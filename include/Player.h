@@ -1,5 +1,6 @@
 #pragma once
 #include "Entity.h"
+#include <SFML/System/Clock.hpp>
 enum class PlayerState {
 	Idle,
 	Moving,
@@ -19,11 +20,18 @@ private:
 	int frameWidth;
 	int frameHeight;
 	void updateAnimation();
-public:
-	Player(float x, float y, const sf::Texture& texture);
+	const sf::Texture& bombTexRef;
+	const sf::Texture& explTexRef;
+	sf::Clock bombCooldown;
+	sf::Clock actionTimer;
+	float actionDurr = 1.1f;
 
-	void update(const std::vector<std::unique_ptr<Entity>>& entities) override;
+public:
+	Player(float x, float y, const sf::Texture& texture, const sf::Texture& bombTexRef,const sf::Texture &explTexRef);
+
+	void update(std::vector<std::unique_ptr<Entity>>& entities) override;
 	sf::FloatRect getBounds() const override { return sprite.getGlobalBounds(); }
 	void draw(sf::RenderWindow& window) override;
-
+	float getBombRange() { return _bombRange; }
+	float getBombAmount() { return _bombAmount; };
 };
