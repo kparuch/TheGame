@@ -29,6 +29,7 @@
     <ClCompile Include="src\main.cpp" />
     <ClCompile Include="src\PickUp.cpp" />
     <ClCompile Include="src\Player.cpp" />
+    <ClCompile Include="src\tinFoil.cpp" />
     <ClCompile Include="src\Wall.cpp" />
   </ItemGroup>
   <ItemGroup>
@@ -38,7 +39,9 @@
     <ClInclude Include="include\ExplosionArea.h" />
     <ClInclude Include="include\Floor.h" />
     <ClInclude Include="include\Game.h" />
+    <ClInclude Include="include\Pickup.h" />
     <ClInclude Include="include\Player.h" />
+    <ClInclude Include="include\Tinfoil.h" />
     <ClInclude Include="include\Wall.h" />
   </ItemGroup>
   <PropertyGroup Label="Globals">

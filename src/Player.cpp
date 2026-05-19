@@ -6,7 +6,7 @@ Player::Player(float x, float y, const sf::Texture& texture, const sf::Texture &
     : sprite(texture), currentState(PlayerState::Idle), bombTexRef(bombTex),explTexRef(explTex)
 {
     sprite.setPosition({ x, y });
-    sprite.setScale({ 0.225f, 0.225f });
+    sprite.setScale({ 0.2f, 0.2f });
     frameWidth = texture.getSize().x / 2;
     frameHeight = texture.getSize().y / 3;
 
@@ -129,5 +129,32 @@ void Player::takeDamage() {
     else {
         currentState = PlayerState::TakeDamage;
         actionTimer.restart();
+    }
+}
+void Player::addHp(int amount) {
+    _hp += amount;
+    if (_hp < 1) {
+        _hp = 1;
+    }
+}
+
+void Player::addBomb(int amount) {
+    _bombAmount += amount;
+    if (_bombAmount < 1) {
+        _bombAmount = 1;
+    }
+}
+
+void Player::speedUp(float val) {
+    _speed += val;
+    if (_speed < 4.0f) {
+        _speed = 4.0f;
+    }
+}
+
+void Player::addRange(int amount) {
+    _bombRange += amount;
+    if (_bombRange < 1) {
+        _bombRange = 1;
     }
 }
