@@ -2,10 +2,10 @@
 #include "Bomb.h"
 #include <cmath>
 Player::Player(float x, float y, const sf::Texture& texture, const sf::Texture &bombTex, const sf::Texture &explTex)
-    : sprite(texture), _speed(7.0f), currentState(PlayerState::Idle), bombTexRef(bombTex),explTexRef(explTex)
+    : sprite(texture), currentState(PlayerState::Idle), bombTexRef(bombTex),explTexRef(explTex)
 {
     sprite.setPosition({ x, y });
-    sprite.setScale({ 0.20f, 0.20f });
+    sprite.setScale({ 0.225f, 0.225f });
     frameWidth = texture.getSize().x / 2;
     frameHeight = texture.getSize().y / 3;
 
@@ -42,14 +42,23 @@ void Player::update( std::vector<std::unique_ptr<Entity>>& entities) {
     if (sf::Keyboard::isKeyPressed(sf::Keyboard::Key::D)) { movement.x += _speed; isMoving = true; }
 }
     if (sf::Keyboard::isKeyPressed(sf::Keyboard::Key::Space)) {
-        if (bombCooldown.getElapsedTime().asSeconds() > 3.0f) //na ten moment zakladamy ze gracz ma jedna bombe, przy robieniu powerupow bede modyfikowal metode stawiania bomby
+        if (bombCooldown.getElapsedTime().asSeconds() > 0.5f) 
         {
-            float gridX = std::round(sprite.getPosition().x / 64.0f) * 64.0f;
-            float gridY = std::round(sprite.getPosition().y / 64.0f) * 64.0f;
-            currentState = PlayerState::PlacingBomb;
-            actionTimer.restart();
-            entities.push_back(std::make_unique<Bomb>(gridX, gridY, bombTexRef, explTexRef));
-            bombCooldown.restart();
+            int activeBombs{};
+            for (const auto& obj : entities) {
+                if (dynamic_cast<Bomb*>(obj.get())) {
+                    activeBombs++;
+                }
+            }
+            if (activeBombs < _bombAmount) {
+                float gridX = std::round(sprite.getPosition().x / 64.0f) * 64.0f;
+                float gridY = std::round(sprite.getPosition().y / 64.0f) * 64.0f;
+                currentState = PlayerState::PlacingBomb;
+                actionTimer.restart();
+                entities.push_back(std::make_unique<Bomb>(gridX, gridY, bombTexRef, explTexRef, _bombRange));
+                bombCooldown.restart();
+            }
+            
 
         }
     }
