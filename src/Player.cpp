@@ -1,6 +1,7 @@
 #include "Player.h"
 #include "Bomb.h"
 #include <cmath>
+#include "ExplosionArea.h"
 Player::Player(float x, float y, const sf::Texture& texture, const sf::Texture &bombTex, const sf::Texture &explTex)
     : sprite(texture), currentState(PlayerState::Idle), bombTexRef(bombTex),explTexRef(explTex)
 {
@@ -26,9 +27,24 @@ void Player::updateAnimation() {
     sprite.setTextureRect(sf::IntRect({ col * frameWidth, row * frameHeight }, { frameWidth, frameHeight }));
 }
 void Player::update( std::vector<std::unique_ptr<Entity>>& entities) {
+    if (currentState == PlayerState::TakeDamage) {
+        if (actionTimer.getElapsedTime().asSeconds()>actionDurr) {
+            currentState = PlayerState::Idle;
+        }
+    }
     if (currentState == PlayerState::PlacingBomb) {
         if (actionTimer.getElapsedTime().asSeconds() > actionDurr) {
             currentState = PlayerState::Idle;
+        }
+    }
+    if (currentState != PlayerState::Dead && currentState != PlayerState::TakeDamage) {
+        for (auto& obj : entities) {
+            if (dynamic_cast<ExplosionArea*>(obj.get())) {
+                if (sprite.getGlobalBounds().findIntersection(obj->getBounds())) {
+                    takeDamage();
+                    break;
+                }
+            }
         }
     }
     sf::Vector2f movement({ 0.f, 0.f });
@@ -40,9 +56,9 @@ void Player::update( std::vector<std::unique_ptr<Entity>>& entities) {
     if (sf::Keyboard::isKeyPressed(sf::Keyboard::Key::S)) { movement.y += _speed; isMoving = true; }
     if (sf::Keyboard::isKeyPressed(sf::Keyboard::Key::A)) { movement.x -= _speed; isMoving = true; }
     if (sf::Keyboard::isKeyPressed(sf::Keyboard::Key::D)) { movement.x += _speed; isMoving = true; }
-}
+    if (sf::Keyboard::isKeyPressed(sf::Keyboard::Key::P)) { takeDamage(); }
     if (sf::Keyboard::isKeyPressed(sf::Keyboard::Key::Space)) {
-        if (bombCooldown.getElapsedTime().asSeconds() > 0.5f) 
+        if (bombCooldown.getElapsedTime().asSeconds() > 0.5f)
         {
             int activeBombs{};
             for (const auto& obj : entities) {
@@ -58,10 +74,12 @@ void Player::update( std::vector<std::unique_ptr<Entity>>& entities) {
                 entities.push_back(std::make_unique<Bomb>(gridX, gridY, bombTexRef, explTexRef, _bombRange));
                 bombCooldown.restart();
             }
-            
+
 
         }
     }
+    }   
+    
     if (currentState != PlayerState::Dead &&
         currentState != PlayerState::TakeDamage &&
         currentState != PlayerState::PlacingBomb)
@@ -70,7 +88,7 @@ void Player::update( std::vector<std::unique_ptr<Entity>>& entities) {
         else currentState = PlayerState::Idle;
     }
 
-    // --- OS X ---
+   
     sprite.move({ movement.x, 0.f }); 
     for (auto& obj : entities) {
         
@@ -83,7 +101,7 @@ void Player::update( std::vector<std::unique_ptr<Entity>>& entities) {
         }
     }
 
-    // --- OS Y ---
+    
     sprite.move({ 0.f, movement.y }); 
     for (auto& obj : entities) {
         if (obj.get() != this && obj->isSolid()) {
@@ -99,4 +117,17 @@ void Player::update( std::vector<std::unique_ptr<Entity>>& entities) {
 }
 void Player::draw(sf::RenderWindow& window) {
     window.draw(sprite);
+}
+void Player::takeDamage() {
+    if (currentState == PlayerState::Dead || currentState == PlayerState::TakeDamage) {
+        return;
+    }
+    _hp--;
+    if (_hp <= 0) {
+        currentState = PlayerState::Dead;
+    }
+    else {
+        currentState = PlayerState::TakeDamage;
+        actionTimer.restart();
+    }
 }

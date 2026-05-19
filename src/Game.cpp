@@ -9,13 +9,16 @@
 Game::Game() {
 	window.create(sf::VideoMode({ 1400,900 }), "Soyman II The Way of the Bomb ");
 	window.setFramerateLimit(30);
+	normalWallText.loadFromFile("assets/idWall.png");
+	wallTexture = normalWallText;
+	cursedWallSheet.loadFromFile("assets/trollBombsUpdated.png");
 	if (!wallTexture.loadFromFile("assets/idWall.png")) {
 		std::cout << "error in idWall loading;\n";
 	}
 	if (!crateTexture.loadFromFile("assets/crate.png")) {
 		std::cout << "error in idWall loading;\n";
 	}
-	if (!floorTexture.loadFromFile("assets/floor.png")) {
+	if (!floorTexture.loadFromFile("assets/wall.png")) {
 		std::cout << "error in idWall loading;\n";
 	}
 	if (!playerTexture.loadFromFile("assets/chudPlayer.png")) {
@@ -42,6 +45,12 @@ void Game::processEvent() {
 		if (event->is<sf::Event::Closed>()) {
 			window.close();
 		}
+		if(const auto* mousePressed = event->getIf<sf::Event::MouseButtonPressed>()){
+			if (gameOver && mousePressed->button == sf::Mouse::Button::Left) {
+				sf::Vector2i mousePos = sf::Mouse::getPosition(window);
+				restartGame();
+			}
+		}
 	}
 }
 void Game::render() {
@@ -54,13 +63,20 @@ void Game::render() {
 void Game::update(){
 	for (uint16_t i = 0; i < gameObjs.size(); ++i){
 		gameObjs[i]->update(gameObjs);
+		if (Player* p = dynamic_cast<Player*>(gameObjs[i].get())) {
+			if (p->isDead()) {
+				trigerCurse();
+			}
 	}
 	gameObjs.erase(
-		std::remove_if(gameObjs.begin(), gameObjs.end(),
-			[](const std::unique_ptr<Entity>& obj) {return obj->isDestroyed();}
-		), gameObjs.end()
+			std::remove_if(gameObjs.begin(), gameObjs.end(),
+				[](const std::unique_ptr<Entity>& obj) {return obj->isDestroyed();}
+			), gameObjs.end()
 
-	);
+		);
+	}
+	
+	
 }
 void Game::loadLevel() {
 	//level 1 -> more to come 
@@ -108,4 +124,37 @@ void Game::loadLevel() {
 	if (playerDetected) {
 		gameObjs.push_back(std::make_unique<Player>(playerPosX, playerPosY, playerTexture, bombTexture, explosionTexture));
 	}
+}
+void Game::trigerCurse() {
+	if (curseTrig) return;
+	curseTrig = true;
+	gameOver = true;
+	
+	floorTexture.loadFromFile("assets/floor.png");
+	crateTexture.loadFromFile("assets/rawMeat.png");
+	int totRows = 5;
+	int totCols = 5;
+	int tileSize = 256;
+	for (uint16_t i = 0; i < gameObjs.size(); ++i) {
+		if (Wall* wall = dynamic_cast<Wall*>(gameObjs[i].get())) {
+			int randCol = rand() % (totCols+1);
+			int randRow = rand() % (totRows);
+
+			sf::IntRect randFrame({ randCol * tileSize, randRow * tileSize }, { tileSize,tileSize });
+			wall->setCrused(cursedWallSheet, randFrame);
+		}
+		
+
+	}
+	
+}
+
+void Game::restartGame() {
+	curseTrig = false;
+	gameOver = false;
+	floorTexture.loadFromFile("assets/wall.png");
+	crateTexture.loadFromFile("assets/crate.png");
+	wallTexture = normalWallText;
+	gameObjs.clear();
+	loadLevel();
 }

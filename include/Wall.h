@@ -10,4 +10,5 @@ public:
 	sf::FloatRect getBounds() const override;
 	bool isSolid() const override { return true; }
 	void draw(sf::RenderWindow& window) override;
+	void setCrused(const sf::Texture& curseText, sf::IntRect frame);
 };
