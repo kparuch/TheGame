@@ -4,7 +4,7 @@ This game will feature the following:
 
 - 1 Player vs 3 bots 
 - 2 / 3 difficulty settings
-- Pickup mechanic
+- Pickup mechanic(in progress)
 - and many more
 
 Enjoy!
