@@ -6,7 +6,7 @@
 #include <cmath> 
 
 Bomb::Bomb(float x, float y, const sf::Texture& bombText, const sf::Texture& expText, int range)
-    : sprite(bombText), explosionTexture(expText), isExploded(false), _range(range)
+    : sprite(bombText), explosionTexture(expText), isExploded(false), _range(range), isPassable(true)
 {
     sprite.setPosition({ x, y });
     sprite.setScale({ 0.25f, 0.25f });
@@ -28,6 +28,7 @@ void Bomb::updateAnimation() {
         row = 0;
     }
     else if (time < 3.0f) {
+       
         currentBombState = BombState::LightUp;
         row = 1;
 
@@ -45,10 +46,24 @@ void Bomb::updateAnimation() {
 
 void Bomb::update(std::vector<std::unique_ptr<Entity>>& entities) {
     if (isExploded) return;
-
+    if (isPassable) {
+        bool isEntityIn = false;
+        for(const auto&enty : entities){
+            if (dynamic_cast<Player*>(enty.get())) {
+                if (sprite.getGlobalBounds().findIntersection(enty->getBounds())) {
+                    isEntityIn = true;
+                    break;
+                }
+        }
+        }
+        if (!isEntityIn) {
+            isPassable = false;
+        }
+    }
+            
     updateAnimation(); 
 
-    if (timer.getElapsedTime().asSeconds() >= 3.0f) {
+    if (timer.getElapsedTime().asSeconds() >= 3.0f || forceExplode) {
         isExploded = true;
         sf::Vector2f center = sprite.getPosition();
         float tileSize = 64.0f;
@@ -82,6 +97,11 @@ void Bomb::update(std::vector<std::unique_ptr<Entity>>& entities) {
                             stopFire = true;
                             spawnFire = true; 
                             break;
+                        }
+                        if (Bomb* otherBomb = dynamic_cast<Bomb*>(obj.get())) {
+                            otherBomb->triggerExplosion();
+                            stopFire = true;
+                            spawnFire = false;
                         }
                     }
                 }

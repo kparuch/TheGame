@@ -19,12 +19,15 @@ private:
 	BombState currentBombState;
 	int frameWidth;
 	int frameHeight;
+	bool forceExplode = false;
+	bool isPassable;
 public:
 	Bomb(float x, float y, const sf::Texture& bombText, const sf::Texture &expText, int range);
 	~Bomb() = default;
-	bool isSolid()const override{ return false; }
+	bool isSolid() const override{ return !isPassable; }
 	bool isDestroyed() const override { return isExploded;}
 	sf::FloatRect getBounds() const override { return sprite.getGlobalBounds(); }
 	void draw(sf::RenderWindow& window) override;
 	void update(std::vector<std::unique_ptr<Entity>>& entities) override;
+	void triggerExplosion() { forceExplode = true; }
 };

@@ -13,9 +13,9 @@ class Player : public Entity {
 private:
 	sf::Sprite sprite;
 	float _speed=5.5f;
-	int _bombAmount=1;
-	int _bombRange=1;
-	int _hp;
+	int _bombAmount=3;
+	int _bombRange=2;
+	int _hp=1;
 	PlayerState currentState;
 	int frameWidth;
 	int frameHeight;
@@ -32,6 +32,6 @@ public:
 	void update(std::vector<std::unique_ptr<Entity>>& entities) override;
 	sf::FloatRect getBounds() const override { return sprite.getGlobalBounds(); }
 	void draw(sf::RenderWindow& window) override;
-	float getBombRange() { return _bombRange; }
-	float getBombAmount() { return _bombAmount; };
+	void takeDamage();
+	bool isDead() { return currentState == PlayerState::Dead; }
 };

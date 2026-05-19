@@ -18,6 +18,12 @@ private:
 	sf::Texture explosionTexture;
 	std::vector<std::unique_ptr<Entity>>gameObjs;
 	void loadLevel();
+	bool gameOver = false;
+	bool curseTrig = false;
+	void restartGame();
+	void trigerCurse();
+	sf::Texture cursedWallSheet;
+	sf::Texture normalWallText;
 public:
 	Game();
 	virtual ~Game();
