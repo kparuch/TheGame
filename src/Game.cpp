@@ -5,6 +5,9 @@
 #include "Crate.h"
 #include "Player.h"
 #include "algorithm"
+#include "Pickup.h"
+#include <random>
+#include "Tinfoil.h"
 
 Game::Game() {
 	window.create(sf::VideoMode({ 1400,900 }), "Soyman II The Way of the Bomb ");
@@ -12,6 +15,7 @@ Game::Game() {
 	normalWallText.loadFromFile("assets/idWall.png");
 	wallTexture = normalWallText;
 	cursedWallSheet.loadFromFile("assets/trollBombsUpdated.png");
+	tinfoilText.loadFromFile("assets/newTinfoilCap.png");
 	if (!wallTexture.loadFromFile("assets/idWall.png")) {
 		std::cout << "error in idWall loading;\n";
 	}
@@ -60,23 +64,51 @@ void Game::render() {
 	}
 	window.display();
 }
-void Game::update(){
-	for (uint16_t i = 0; i < gameObjs.size(); ++i){
+void Game::update() {
+	
+	for (uint16_t i = 0; i < gameObjs.size(); ++i) {
 		gameObjs[i]->update(gameObjs);
+
 		if (Player* p = dynamic_cast<Player*>(gameObjs[i].get())) {
 			if (p->isDead()) {
 				trigerCurse();
 			}
-	}
-	gameObjs.erase(
-			std::remove_if(gameObjs.begin(), gameObjs.end(),
-				[](const std::unique_ptr<Entity>& obj) {return obj->isDestroyed();}
-			), gameObjs.end()
+		}
+	} 
 
-		);
+	
+	std::vector<std::unique_ptr<Entity>> pendingdrops;
+	for (auto& obj : gameObjs) {
+		if (obj->isDestroyed()) {
+			if (Crate* crate = dynamic_cast<Crate*>(obj.get())) {
+				static std::random_device rd;
+				static std::mt19937 gen(rd());
+				std::uniform_int_distribution<> distrib(1, 100);
+
+				int roll = distrib(gen);
+				std::cout << "Wylosowano: " << roll << "\n"; 
+
+				if (roll >= 80) { 
+					float dropX = crate->getBounds().position.x;
+					float dropY = crate->getBounds().position.y;
+
+					pendingdrops.push_back(std::make_unique<TinFoil>(dropX, dropY, tinfoilText));
+				}
+			}
+		}
 	}
+
 	
+	for (auto& drop : pendingdrops) {
+		gameObjs.push_back(std::move(drop));
+	}
+
 	
+	gameObjs.erase(
+		std::remove_if(gameObjs.begin(), gameObjs.end(),
+			[](const std::unique_ptr<Entity>& obj) {return obj->isDestroyed();}
+		), gameObjs.end()
+	);
 }
 void Game::loadLevel() {
 	//level 1 -> more to come 

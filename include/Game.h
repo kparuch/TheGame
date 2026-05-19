@@ -4,6 +4,7 @@
 #include <memory>
 #include <string>
 #include "Entity.h"
+#include "Pickup.h"
 class Game {
 private:
 	sf::RenderWindow window;
@@ -16,6 +17,7 @@ private:
 	sf::Texture playerTexture;
 	sf::Texture bombTexture;
 	sf::Texture explosionTexture;
+	sf::Texture tinfoilText;
 	std::vector<std::unique_ptr<Entity>>gameObjs;
 	void loadLevel();
 	bool gameOver = false;

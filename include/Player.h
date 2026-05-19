@@ -34,4 +34,8 @@ public:
 	void draw(sf::RenderWindow& window) override;
 	void takeDamage();
 	bool isDead() { return currentState == PlayerState::Dead; }
+	void addHp(int amount);
+	void addBomb(int amount);
+	void speedUp(float val);
+	void addRange(int amount);
 };

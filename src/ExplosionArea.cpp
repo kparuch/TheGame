@@ -1,4 +1,5 @@
 #include "ExplosionArea.h"
+#include "Pickup.h"
 ExplosionArea::ExplosionArea(float x, float y, const sf::Texture& texture)
     : sprite(texture), toBeErased(false)
 {
@@ -6,9 +7,17 @@ ExplosionArea::ExplosionArea(float x, float y, const sf::Texture& texture)
     sprite.setScale({ 0.25f, 0.25f });
 }
 void ExplosionArea::update(std::vector<std::unique_ptr<Entity>>&entities) {
-    if (czas.getElapsedTime().asSeconds() >= 1.0f) {
+    if (czas.getElapsedTime().asSeconds() >= 0.5f) {
         toBeErased = true;
+        return;
     }
+    for (auto& obj : entities) {
+        if (Pickup* pickup = dynamic_cast<Pickup*>(obj.get())) {
+            if (sprite.getGlobalBounds().findIntersection(pickup->getBounds())) {
+                pickup->burn();
+            }
+        }
+     }
 }
 
 void ExplosionArea::draw(sf::RenderWindow& window) {
