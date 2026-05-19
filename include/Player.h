@@ -12,9 +12,9 @@ enum class PlayerState {
 class Player : public Entity {
 private:
 	sf::Sprite sprite;
-	float _speed;
-	float _bombAmount;
-	float _bombRange;
+	float _speed=5.5f;
+	int _bombAmount=1;
+	int _bombRange=1;
 	int _hp;
 	PlayerState currentState;
 	int frameWidth;

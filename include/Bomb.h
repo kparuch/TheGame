@@ -20,7 +20,7 @@ private:
 	int frameWidth;
 	int frameHeight;
 public:
-	Bomb(float x, float y, const sf::Texture& bombText, const sf::Texture &expText);
+	Bomb(float x, float y, const sf::Texture& bombText, const sf::Texture &expText, int range);
 	~Bomb() = default;
 	bool isSolid()const override{ return false; }
 	bool isDestroyed() const override { return isExploded;}

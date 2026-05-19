@@ -5,13 +5,13 @@
 #include "ExplosionArea.h"
 #include <cmath> 
 
-Bomb::Bomb(float x, float y, const sf::Texture& bombText, const sf::Texture& expText)
-    : sprite(bombText), explosionTexture(expText), isExploded(false), _range(2)
+Bomb::Bomb(float x, float y, const sf::Texture& bombText, const sf::Texture& expText, int range)
+    : sprite(bombText), explosionTexture(expText), isExploded(false), _range(range)
 {
     sprite.setPosition({ x, y });
     sprite.setScale({ 0.25f, 0.25f });
 
-    frameWidth = bombText.getSize().x / 2;
+    frameWidth = bombText.getSize().x / 2;  
     frameHeight = bombText.getSize().y / 3;
 
     updateAnimation();
