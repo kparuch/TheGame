@@ -20,6 +20,7 @@
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="src\Bomb.cpp" />
+    <ClCompile Include="src\ChocolateMilk.cpp" />
     <ClCompile Include="src\Crate.cpp" />
     <ClCompile Include="src\Enemy.cpp" />
     <ClCompile Include="src\Entity.cpp" />
@@ -32,11 +33,13 @@
     <ClCompile Include="src\Player.cpp" />
     <ClCompile Include="src\RawMeat.cpp" />
     <ClCompile Include="src\RawMeatG.cpp" />
+    <ClCompile Include="src\SoyMilk.cpp" />
     <ClCompile Include="src\tinFoil.cpp" />
     <ClCompile Include="src\Wall.cpp" />
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="include\Bomb.h" />
+    <ClInclude Include="include\ChocolateMilk.h" />
     <ClInclude Include="include\Crate.h" />
     <ClInclude Include="include\Entity.h" />
     <ClInclude Include="include\ExplosionArea.h" />
@@ -47,6 +50,7 @@
     <ClInclude Include="include\Player.h" />
     <ClInclude Include="include\RawMeat.h" />
     <ClInclude Include="include\RawMeatG.h" />
+    <ClInclude Include="include\SoyMilk.h" />
     <ClInclude Include="include\TextureManager.h" />
     <ClInclude Include="include\Tinfoil.h" />
     <ClInclude Include="include\Wall.h" />
