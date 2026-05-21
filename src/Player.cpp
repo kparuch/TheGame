@@ -170,7 +170,7 @@ void Player::update( std::vector<std::unique_ptr<Entity>>& entities) {
                 float gridY = std::round(sprite.getPosition().y / 64.0f) * 64.0f;
                 currentState = PlayerState::PlacingBomb;
                 actionTimer.restart();
-                entities.push_back(std::make_unique<Bomb>(gridX, gridY, bombTexRef, explTexRef, _bombRange));
+                entities.push_back(std::make_unique<Bomb>(gridX, gridY, bombTexRef, explTexRef,  _currentBombStats));
                 bombCooldown.restart();
             }
 
@@ -291,12 +291,6 @@ void Player::speedUp(float val) {
     }
 }
 
-void Player::addRange(int amount) {
-    _bombRange += amount;
-    if (_bombRange < 1) {
-        _bombRange = 1;
-    }
-}
 void Player::setHp(int val) {
     _hp = val;
 }
@@ -305,5 +299,23 @@ void Player::setAnimState(CursedState state) {
     curseState = state;
     if (state == CursedState::Hit) {
         hitAnimTimer.restart();
+    }
+}
+void Player::addBombRange(int left, int right, int up, int down) {
+    _currentBombStats.rangeLeft += left;
+    if (_currentBombStats.rangeLeft < 1) {
+        _currentBombStats.rangeLeft=1;
+    }
+    _currentBombStats.rangeRight += right;
+    if (_currentBombStats.rangeRight  < 1) {
+        _currentBombStats.rangeRight=1;
+    }
+    _currentBombStats.rangeUp += up;
+    if (_currentBombStats.rangeUp < 1) {
+        _currentBombStats.rangeUp=1;
+    }
+    _currentBombStats.rangeDown += down;
+    if (_currentBombStats.rangeDown  < 1) {
+        _currentBombStats.rangeDown = 1;
     }
 }

@@ -4,12 +4,13 @@
 #include "Player.h"
 #include "ExplosionArea.h"
 #include <cmath> 
+#include <vector>
 
-Bomb::Bomb(float x, float y, const sf::Texture& bombText, const sf::Texture& expText, int range)
-    : sprite(bombText), explosionTexture(expText), isExploded(false), _range(range), isPassable(true)
+Bomb::Bomb(float x, float y, const sf::Texture& bombText, const sf::Texture& expText, BombStats stats)
+    : sprite(bombText), explosionTexture(expText), isExploded(false), _stats(stats), isPassable(true)
 {
     sprite.setPosition({ x, y });
-    sprite.setScale({ 0.25f, 0.25f });
+    sprite.setScale({ 0.20f, 0.20f });
 
     frameWidth = bombText.getSize().x / 2;  
     frameHeight = bombText.getSize().y / 3;
@@ -70,14 +71,24 @@ void Bomb::update(std::vector<std::unique_ptr<Entity>>& entities) {
 
         std::vector<sf::Vector2f> firePos;
         firePos.push_back(center);
+        struct DirInfo {
+            sf::Vector2i vec;
+            int maxRange;
+        };
+        std::vector<DirInfo> dirs = {
+    {{0, -1}, _stats.rangeUp},
+    {{0, 1},  _stats.rangeDown},
+    {{-1, 0}, _stats.rangeLeft},
+    {{1, 0},  _stats.rangeRight}
+        };
 
-        sf::Vector2i dirs[] = { {0, -1}, {0, 1}, {-1, 0}, {1, 0} };
+        
 
        
         for (const auto& dir : dirs) {
-            for (int i = 1; i <= _range; ++i) {
-                float checkX = center.x + (dir.x * i * tileSize);
-                float checkY = center.y + (dir.y * i * tileSize);
+            for (int i = 1; i <= dir.maxRange; ++i) {
+                float checkX = center.x + (dir.vec.x * i * tileSize);
+                float checkY = center.y + (dir.vec.y * i * tileSize);
                 sf::FloatRect currentTileRect({ checkX, checkY }, { tileSize, tileSize });
 
                 bool stopFire = false;

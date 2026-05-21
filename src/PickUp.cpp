@@ -10,8 +10,8 @@ Pickup::Pickup(float x, float y, const sf::Texture& texture)
     frameWidth = texture.getSize().x / 2;
     frameHeight = texture.getSize().y / 2;
     sprite.setTextureRect(sf::IntRect({ 0, 0 }, { frameWidth, frameHeight }));
-    sprite.setScale({ 0.25f, 0.25f });
-    sprite.setPosition({ x + 2.f, y + 2.f });
+    sprite.setScale({ 0.225f, 0.225f });
+    sprite.setPosition({ x, y });
 }
 void Pickup::updateAnimation() {
     float time = animTimer.getElapsedTime().asSeconds();

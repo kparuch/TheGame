@@ -1,6 +1,7 @@
 #pragma once
 #include "Entity.h"
 #include <SFML/System/Clock.hpp>
+#include "Bomb.h"
 enum class CursedState {
 	Idle,
 	Move,
@@ -18,9 +19,9 @@ enum class PlayerState {
 class Player : public Entity {
 private:
 	sf::Sprite sprite;
-	float _speed=3.0f;
+	float _speed=3.5f;
 	int _bombAmount=1;
-	int _bombRange=1;
+	BombStats _currentBombStats;
 	int _hp=3;
 	PlayerState currentState;
 	int frameWidth;
@@ -55,10 +56,11 @@ public:
 	void addHp(int amount);
 	void addBomb(int amount);
 	void speedUp(float val);
-	void addRange(int amount);
+	
 	void activateCurse();
 	bool isCursed()const { return _isCursed; }
 	void resetIdleTimer() { idleTimer.restart(); }
 	void setHp(int val);
 	void setAnimState(CursedState state);
+	void addBombRange(int newLeft, int newRight, int newUp, int newDwn);
 };

@@ -8,6 +8,12 @@ enum class BombState {
 	LightUp,
 	Exploded
 };
+struct BombStats {
+	int rangeLeft = 1;
+	int rangeRight = 1;
+	int rangeUp = 1;
+	int rangeDown = 1;
+};
 class Bomb : public Entity {
 private:
 	sf::Sprite sprite;
@@ -21,8 +27,9 @@ private:
 	int frameHeight;
 	bool forceExplode = false;
 	bool isPassable;
+	BombStats _stats;
 public:
-	Bomb(float x, float y, const sf::Texture& bombText, const sf::Texture &expText, int range);
+	Bomb(float x, float y, const sf::Texture& bombText, const sf::Texture &expText,BombStats _stats);
 	~Bomb() = default;
 	bool isSolid() const override{ return !isPassable; }
 	bool isDestroyed() const override { return isExploded;}

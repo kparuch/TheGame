@@ -10,7 +10,7 @@
 #include "PickupFactory.h"
 
 Game::Game() {
-	window.create(sf::VideoMode({ 1400,900 }), "Soyman II The Way of the Bomb ");
+	window.create(sf::VideoMode({ 1920,1080 }), "Soyman II The Way of the Bomb ");
 	window.setFramerateLimit(30);
 	
 	//essentials
@@ -29,6 +29,8 @@ Game::Game() {
 	texHandler.load("tinfoil", "assets/newTinfoilCap.png");
 	texHandler.load("rawMeat", "assets/rawMeat.png");
 	texHandler.load("rawMeatG", "assets/rawMeatG.png");
+	texHandler.load("chocoMilk", "assets/chocolateMilk.png");
+	texHandler.load("soy", "assets/soyMilk.png");
 	loadLevel();
 };
 Game::~Game() {};
@@ -83,11 +85,14 @@ void Game::update() {
 				int roll = distrib(gen);
 				std::cout << "Rolled: " << roll << "\n"; 
 
-				if (roll >= 10) { 
+				if (roll >= 70) { 
 					float dropX = crate->getBounds().position.x;
 					float dropY = crate->getBounds().position.y;
+					auto newPickup = PickupFactory::spawnRandom(dropX + 2.f, dropY + 2.f, texHandler);
 
-					pendingdrops.push_back(PickupFactory::spawnRandom(dropX + 2.f, dropY + 2.f, texHandler));
+					if (newPickup != nullptr) {
+						pendingdrops.push_back(std::move(newPickup));
+					}
 				}
 			}
 		}
@@ -108,18 +113,35 @@ void Game::update() {
 void Game::loadLevel() {
 	//level 1 -> more to come 
 	std::vector<std::string> map = {
-		"#################",
-		"#P  XXX X XXX XE#",
-		"# #X#X#X#X#X#X# #",
-		"# X XXX X XXX X #",
-		"#X#X#X#X#X#X#X#X#",
-		"#XXXXXXXXXXXXXXX#",
-		"#XXXXXXXXXXXXXXX#",
-		"#X#X#X#X#X#X#X#X#",
-		"#XX XXX X XXX XX#",
-		"# #X#X#X#X#X#X# #",
-		"#E  XXX X XXX  E#",
-		"#################",
+			//"#################",
+			//"#P  XXX X XXX XE#",
+			//"# #X#X#X#X#X#X# #",
+			//"# X XXX X XXX X #",
+			//"#X#X#X#X#X#X#X#X#",
+			//"#XXXXXXXXXXXXXXX#",
+			//"#XXXXXXXXXXXXXXX#",
+			//"#X#X#X#X#X#X#X#X#",
+			//"#XX XXX X XXX XX#",
+			//"# #X#X#X#X#X#X# #",
+			//"#E  XXX X XXX  E#",
+			//"#################",
+		"#########################",
+	"#P  XX XXXXX XXXXX XX  E#",
+	"# #X#X#X#X#X#X#X#X#X#X# #",
+	"# XXXX XXXXX XXXXX XXXX #",
+	"#X#X# #X#X#X#X#X#X# #X#X#",
+	"# XXXXXXXX X XXXXXXXX X #",
+	"#X#X#X#X#X# #X#X#X#X#X#X#",
+	"# XXXX XXXXX XXXXX XXXX #",
+	"#X#X#X# #X#X#X#X# #X#X#X#",
+	"# XXXX XXXXX XXXXX XXXX #",
+	"#X#X#X#X#X# #X#X#X#X#X#X#",
+	"# XXXXXXXX X XXXXXXXX X #",
+	"#X#X# #X#X#X#X#X#X# #X#X#",
+	"# XXXX XXXXX XXXXX XXXX #",
+	"# #X#X#X#X#X#X#X#X#X#X# #",
+	"#E  XX XXXXX XXXXX XX  E#",
+	"#########################"
 
 	};
 	float tileSize = 64.0f;
