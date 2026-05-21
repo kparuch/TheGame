@@ -11,7 +11,7 @@ Pickup::Pickup(float x, float y, const sf::Texture& texture)
     frameHeight = texture.getSize().y / 2;
     sprite.setTextureRect(sf::IntRect({ 0, 0 }, { frameWidth, frameHeight }));
     sprite.setScale({ 0.25f, 0.25f });
-    sprite.setPosition({ x + 16.f, y + 16.f });
+    sprite.setPosition({ x + 2.f, y + 2.f });
 }
 void Pickup::updateAnimation() {
     float time = animTimer.getElapsedTime().asSeconds();
@@ -41,4 +41,7 @@ void Pickup::burn() {
     if (graceTimer.getElapsedTime().asSeconds() > graceDur) {
         isPickedUp = true;
     }
+}
+void::Pickup::destroy() {
+    isPickedUp = true;
 }

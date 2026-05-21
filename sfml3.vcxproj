@@ -28,7 +28,10 @@
     <ClCompile Include="src\Game.cpp" />
     <ClCompile Include="src\main.cpp" />
     <ClCompile Include="src\PickUp.cpp" />
+    <ClCompile Include="src\PickupFactory.cpp" />
     <ClCompile Include="src\Player.cpp" />
+    <ClCompile Include="src\RawMeat.cpp" />
+    <ClCompile Include="src\RawMeatG.cpp" />
     <ClCompile Include="src\tinFoil.cpp" />
     <ClCompile Include="src\Wall.cpp" />
   </ItemGroup>
@@ -40,7 +43,11 @@
     <ClInclude Include="include\Floor.h" />
     <ClInclude Include="include\Game.h" />
     <ClInclude Include="include\Pickup.h" />
+    <ClInclude Include="include\PickupFactory.h" />
     <ClInclude Include="include\Player.h" />
+    <ClInclude Include="include\RawMeat.h" />
+    <ClInclude Include="include\RawMeatG.h" />
+    <ClInclude Include="include\TextureManager.h" />
     <ClInclude Include="include\Tinfoil.h" />
     <ClInclude Include="include\Wall.h" />
   </ItemGroup>

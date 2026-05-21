@@ -1,6 +1,12 @@
 #pragma once
 #include "Entity.h"
 #include <SFML/System/Clock.hpp>
+enum class CursedState {
+	Idle,
+	Move,
+	Hit,
+	PostHit
+};
 enum class PlayerState {
 	Idle,
 	Moving,
@@ -12,10 +18,10 @@ enum class PlayerState {
 class Player : public Entity {
 private:
 	sf::Sprite sprite;
-	float _speed=5.5f;
-	int _bombAmount=3;
-	int _bombRange=2;
-	int _hp=1;
+	float _speed=3.0f;
+	int _bombAmount=1;
+	int _bombRange=1;
+	int _hp=3;
 	PlayerState currentState;
 	int frameWidth;
 	int frameHeight;
@@ -25,17 +31,34 @@ private:
 	sf::Clock bombCooldown;
 	sf::Clock actionTimer;
 	float actionDurr = 1.1f;
+	bool _isCursed = false;
+	bool _hasDebuff = false;
+	sf::Clock curseTime;
+	sf::Clock debuffTime;
+	sf::Clock idleTimer;
+	float _ogSpeed = 5.5f;
+	sf::Vector2f lastPos;
+	sf::Texture curseTex;
+	CursedState curseState;
+	sf::Texture normTex;
+	sf::Clock hitAnimTimer;
+
 
 public:
-	Player(float x, float y, const sf::Texture& texture, const sf::Texture& bombTexRef,const sf::Texture &explTexRef);
+	Player(float x, float y, const sf::Texture& texture, const sf::Texture& bombTexRef,const sf::Texture &explTexRef, const sf::Texture &curseTex);
 
 	void update(std::vector<std::unique_ptr<Entity>>& entities) override;
 	sf::FloatRect getBounds() const override { return sprite.getGlobalBounds(); }
 	void draw(sf::RenderWindow& window) override;
-	void takeDamage();
+	void takeDamage(bool byPassGrace = false);
 	bool isDead() { return currentState == PlayerState::Dead; }
 	void addHp(int amount);
 	void addBomb(int amount);
 	void speedUp(float val);
 	void addRange(int amount);
+	void activateCurse();
+	bool isCursed()const { return _isCursed; }
+	void resetIdleTimer() { idleTimer.restart(); }
+	void setHp(int val);
+	void setAnimState(CursedState state);
 };

@@ -24,4 +24,5 @@ public:
 	bool isDestroyed() const override	{ return isPickedUp; }
 	virtual void applyEffect(Player* p) = 0;
 	void burn();
+	void destroy();
 };
