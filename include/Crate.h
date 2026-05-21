@@ -14,4 +14,7 @@ public:
 	void draw(sf::RenderWindow& window) override;
 	bool isDestroyed()const override { return destroyed; }
 	void destroy()override { destroyed = true; }
+	void setCursed(const sf::Texture& tex) {
+		sprite.setTexture(tex,true);
+	}
 };

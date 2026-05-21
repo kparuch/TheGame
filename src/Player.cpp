@@ -2,14 +2,17 @@
 #include "Bomb.h"
 #include <cmath>
 #include "ExplosionArea.h"
-Player::Player(float x, float y, const sf::Texture& texture, const sf::Texture &bombTex, const sf::Texture &explTex)
-    : sprite(texture), currentState(PlayerState::Idle), bombTexRef(bombTex),explTexRef(explTex)
+#include "Crate.h"
+#include "Pickup.h"
+#include <iostream>
+Player::Player(float x, float y, const sf::Texture& normtexture, const sf::Texture &bombTex, const sf::Texture &explTex, const sf::Texture &curse)
+    :sprite(normtexture), currentState(PlayerState::Idle), bombTexRef(bombTex),explTexRef(explTex), curseTex(curse)
 {
     sprite.setPosition({ x, y });
-    sprite.setScale({ 0.2f, 0.2f });
-    frameWidth = texture.getSize().x / 2;
-    frameHeight = texture.getSize().y / 3;
-
+    sprite.setScale({ 0.18f, 0.18f });
+    frameWidth = normtexture.getSize().x / 2;
+    frameHeight = normtexture.getSize().y / 3;
+    normTex = normtexture;
     
     updateAnimation();
 }
@@ -26,7 +29,100 @@ void Player::updateAnimation() {
     }
     sprite.setTextureRect(sf::IntRect({ col * frameWidth, row * frameHeight }, { frameWidth, frameHeight }));
 }
+void Player::activateCurse() {
+    _isCursed = true;
+    _hasDebuff = false;
+    _ogSpeed = _speed;
+    speedUp(20);
+    _hp = 100;
+    curseTime.restart();
+    idleTimer.restart();
+    lastPos = getBounds().position;
+}
 void Player::update( std::vector<std::unique_ptr<Entity>>& entities) {
+    if (_isCursed) {
+        
+        
+        sf::Vector2f currentPos = getBounds().position;
+        bool isMoving = (currentPos != lastPos);
+        if (isMoving) {
+            idleTimer.restart();
+        }
+        else {
+            if (idleTimer.getElapsedTime().asSeconds() >= 2.0f) {
+                _isCursed = false;
+                setHp(1);
+                takeDamage(true);
+                return;
+            }
+        }
+
+        
+        if (curseTime.getElapsedTime().asSeconds() >= 8.0f) {
+            _isCursed = false;
+            _hasDebuff = true;
+            _speed = 1.5f;
+            _hp = 1;
+            debuffTime.restart();  
+            sprite.setTexture(normTex);
+            return;
+        }
+
+        
+        sprite.setTexture(curseTex);
+
+        if (curseState == CursedState::Hit) {
+            if (hitAnimTimer.getElapsedTime().asSeconds() >= 0.15f) { // Wrócmy do dobrych wartości!
+                curseState = CursedState::PostHit;
+                hitAnimTimer.restart();
+            }
+        }
+        // 2. TUTAJ MUSI BYĆ 'else if' - Jeśli jesteśmy w Hit, komputer zignoruje wszystko poniżej!
+        else if (curseState == CursedState::PostHit) {
+            if (hitAnimTimer.getElapsedTime().asSeconds() >= 0.5f) {
+                curseState = CursedState::Idle;
+            }
+        }
+        // 3. To 'else' wykona się TYLKO wtedy, gdy nie jesteśmy ani w Hit, ani w PostHit
+        else {
+            if (isMoving) {
+                curseState = CursedState::Move;
+            }
+            else {
+                curseState = CursedState::Idle;
+            }
+        }
+
+        
+        int col{}; int row{};
+        int frameHeight = curseTex.getSize().y/2;
+        int frameWidth = curseTex.getSize().x / 2;
+        switch (curseState) {
+        case CursedState::Idle:    col = 0; row = 0; break;
+        case CursedState::Move:    col = 1; row = 0; break;
+        case CursedState::Hit:     col = 0; row = 1; break;
+        case CursedState::PostHit: col = 1; row = 1; break;
+        }
+        sprite.setScale({ 0.18f,0.18f });
+        sprite.setTextureRect(sf::IntRect({ col * frameWidth, row * frameHeight }, { frameWidth, frameHeight }));
+        
+        lastPos = currentPos;
+        
+    }
+    
+    else if (_hasDebuff) {
+        if (debuffTime.getElapsedTime().asSeconds() >= 5.0f) {
+            _speed = _ogSpeed; 
+            _hasDebuff = false;
+            _hp = 1;
+        }
+        sprite.setTexture(normTex); 
+        
+        
+    }
+    else {
+        sprite.setTexture(normTex);
+    }
     if (currentState == PlayerState::TakeDamage) {
         if (actionTimer.getElapsedTime().asSeconds()>actionDurr) {
             currentState = PlayerState::Idle;
@@ -57,7 +153,7 @@ void Player::update( std::vector<std::unique_ptr<Entity>>& entities) {
     if (sf::Keyboard::isKeyPressed(sf::Keyboard::Key::A)) { movement.x -= _speed; isMoving = true; }
     if (sf::Keyboard::isKeyPressed(sf::Keyboard::Key::D)) { movement.x += _speed; isMoving = true; }
     if (sf::Keyboard::isKeyPressed(sf::Keyboard::Key::P)) { takeDamage(); }
-    if (sf::Keyboard::isKeyPressed(sf::Keyboard::Key::Space)) {
+    if (sf::Keyboard::isKeyPressed(sf::Keyboard::Key::Space) && !_isCursed) {
         if (bombCooldown.getElapsedTime().asSeconds() > 0.5f)
         {
             int activeBombs{};
@@ -89,25 +185,63 @@ void Player::update( std::vector<std::unique_ptr<Entity>>& entities) {
     }
 
    
-    sprite.move({ movement.x, 0.f }); 
+    // --- RUCH W OSI X ---
+    sprite.move({ movement.x, 0.f });
     for (auto& obj : entities) {
-        
-        if (obj.get() != this && obj->isSolid()) {
-           
-            if (sprite.getGlobalBounds().findIntersection(obj->getBounds())) {
-                sprite.move({ -movement.x, 0.f }); 
+        if (obj.get() == this) continue;
+
+        if (sprite.getGlobalBounds().findIntersection(obj->getBounds())) {
+            if (_isCursed) {
+                if (Crate* crate = dynamic_cast<Crate*>(obj.get())) {
+                    if (crate->isDestroyed()) continue;
+                    crate->destroy();
+
+                    if (curseState != CursedState::Hit) {
+                        curseState = CursedState::Hit;
+                        hitAnimTimer.restart();
+                    }
+
+                    continue;
+                }
+                else if (Pickup* pickup = dynamic_cast<Pickup*>(obj.get())) {
+                    if (pickup->isDestroyed()) continue;
+
+                    pickup->destroy();
+                    continue;
+                }
+            }
+            if (obj->isSolid()) {
+                sprite.move({ -movement.x, 0.f });
                 break;
             }
         }
     }
 
     
-    sprite.move({ 0.f, movement.y }); 
+    sprite.move({ 0.f, movement.y });
     for (auto& obj : entities) {
-        if (obj.get() != this && obj->isSolid()) {
-           
-            if (sprite.getGlobalBounds().findIntersection(obj->getBounds())) {
-                sprite.move({ 0.f, -movement.y }); 
+        if (obj.get() == this) continue;
+
+        if (sprite.getGlobalBounds().findIntersection(obj->getBounds())) {
+            if (_isCursed) {
+                if (Crate* crate = dynamic_cast<Crate*>(obj.get())) {
+                    if (crate->isDestroyed()) continue;
+                    crate->destroy();
+                    
+                    curseState = CursedState::Hit;
+                    hitAnimTimer.restart();
+
+                    continue;
+                }
+                else if (Pickup* pickup = dynamic_cast<Pickup*>(obj.get())) {
+                    if (pickup->isDestroyed()) continue;
+
+                    pickup->destroy();
+                    continue;
+                }
+            }
+            if (obj->isSolid()) {
+                sprite.move({ 0.f, -movement.y });
                 break;
             }
         }
@@ -118,8 +252,11 @@ void Player::update( std::vector<std::unique_ptr<Entity>>& entities) {
 void Player::draw(sf::RenderWindow& window) {
     window.draw(sprite);
 }
-void Player::takeDamage() {
-    if (currentState == PlayerState::Dead || currentState == PlayerState::TakeDamage) {
+void Player::takeDamage(bool byPassGracePeriod) {
+    if (currentState == PlayerState::Dead) {
+        return;
+    }
+    if(currentState==PlayerState::TakeDamage && !byPassGracePeriod){
         return;
     }
     _hp--;
@@ -150,11 +287,24 @@ void Player::speedUp(float val) {
     if (_speed < 4.0f) {
         _speed = 4.0f;
     }
+    else if (_speed > 10.5f) {
+        _speed = 10.5f;
+    }
 }
 
 void Player::addRange(int amount) {
     _bombRange += amount;
     if (_bombRange < 1) {
         _bombRange = 1;
+    }
+}
+void Player::setHp(int val) {
+    _hp = val;
+}
+
+void Player::setAnimState(CursedState state) {
+    curseState = state;
+    if (state == CursedState::Hit) {
+        hitAnimTimer.restart();
     }
 }

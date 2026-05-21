@@ -7,7 +7,7 @@ void Floor::update(std::vector<std::unique_ptr<Entity>>& entities) {};
 
 
 sf::FloatRect Floor::getBounds() const {
-	return sprite.getGlobalBounds(); // SFML sam wyliczy prostokąt naszego sprite'a
+	return sprite.getGlobalBounds();
 }
 void Floor::draw(sf::RenderWindow& window) {
 	window.draw(sprite);

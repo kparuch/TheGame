@@ -7,33 +7,28 @@
 #include "algorithm"
 #include "Pickup.h"
 #include <random>
-#include "Tinfoil.h"
+#include "PickupFactory.h"
 
 Game::Game() {
 	window.create(sf::VideoMode({ 1400,900 }), "Soyman II The Way of the Bomb ");
 	window.setFramerateLimit(30);
-	normalWallText.loadFromFile("assets/idWall.png");
-	wallTexture = normalWallText;
-	cursedWallSheet.loadFromFile("assets/trollBombsUpdated.png");
-	tinfoilText.loadFromFile("assets/newTinfoilCap.png");
-	if (!wallTexture.loadFromFile("assets/idWall.png")) {
-		std::cout << "error in idWall loading;\n";
-	}
-	if (!crateTexture.loadFromFile("assets/crate.png")) {
-		std::cout << "error in idWall loading;\n";
-	}
-	if (!floorTexture.loadFromFile("assets/wall.png")) {
-		std::cout << "error in idWall loading;\n";
-	}
-	if (!playerTexture.loadFromFile("assets/chudPlayer.png")) {
-		std::cout << "error in idWall loading;\n";
-	}
-	if (!bombTexture.loadFromFile("assets/bomb.png")) {
-		std::cout << "errr while loading bomb text\n";
-	}
-	if (!explosionTexture.loadFromFile("assets/boomver00.png")) {
-		std::cout << "errr while loading bomb text\n";
-	}
+	
+	//essentials
+	texHandler.load("wall", "assets/idWall.png");
+	texHandler.load("crate", "assets/crate.png");
+	texHandler.load("floor", "assets/wall.png");		
+	texHandler.load("normPlayer", "assets/chudPlayer.png");
+	texHandler.load("cursedPlayer", "assets/cursedPlayer.png");
+	texHandler.load("bomb", "assets/bomb.png");
+	texHandler.load("explosion", "assets/boomver00.png");
+	//curse
+	texHandler.load("cursed_wall", "assets/trollBombsUpdated.png");
+	texHandler.load("cursed_crate", "assets/rawMeat.png");
+	texHandler.load("cursed_floor", "assets/floor.png");
+	//pickups
+	texHandler.load("tinfoil", "assets/newTinfoilCap.png");
+	texHandler.load("rawMeat", "assets/rawMeat.png");
+	texHandler.load("rawMeatG", "assets/rawMeatG.png");
 	loadLevel();
 };
 Game::~Game() {};
@@ -86,13 +81,13 @@ void Game::update() {
 				std::uniform_int_distribution<> distrib(1, 100);
 
 				int roll = distrib(gen);
-				std::cout << "Wylosowano: " << roll << "\n"; 
+				std::cout << "Rolled: " << roll << "\n"; 
 
-				if (roll >= 80) { 
+				if (roll >= 10) { 
 					float dropX = crate->getBounds().position.x;
 					float dropY = crate->getBounds().position.y;
 
-					pendingdrops.push_back(std::make_unique<TinFoil>(dropX, dropY, tinfoilText));
+					pendingdrops.push_back(PickupFactory::spawnRandom(dropX + 2.f, dropY + 2.f, texHandler));
 				}
 			}
 		}
@@ -136,7 +131,7 @@ void Game::loadLevel() {
 			float posX = x * tileSize;
 			float posY = y * tileSize;
 
-			gameObjs.push_back(std::make_unique<Floor>(posX, posY, floorTexture));
+			gameObjs.push_back(std::make_unique<Floor>(posX, posY, texHandler.get("floor")));
 			if (map[y][x] == 'P') {
 			
 				playerPosX = posX;
@@ -145,16 +140,20 @@ void Game::loadLevel() {
 				std::cout << "Player detected at: " << playerDetected << " " << playerPosY << "\n";
 			}
 			if (map[y][x] == 'X') {
-				gameObjs.push_back(std::make_unique<Crate>(posX, posY, crateTexture));
+				gameObjs.push_back(std::make_unique<Crate>(posX, posY, texHandler.get("crate")));
 			}
 			if (map[y][x] == '#') {
-				gameObjs.push_back(std::make_unique<Wall>(posX, posY, wallTexture));
+				gameObjs.push_back(std::make_unique<Wall>(posX, posY, texHandler.get("wall")));
 			}
 		}
 	}
 	
 	if (playerDetected) {
-		gameObjs.push_back(std::make_unique<Player>(playerPosX, playerPosY, playerTexture, bombTexture, explosionTexture));
+		gameObjs.push_back(std::make_unique<Player>(playerPosX, playerPosY,
+			texHandler.get("normPlayer"),
+			texHandler.get("bomb"),
+			texHandler.get("explosion"),
+			texHandler.get("cursedPlayer")));
 	}
 }
 void Game::trigerCurse() {
@@ -162,8 +161,7 @@ void Game::trigerCurse() {
 	curseTrig = true;
 	gameOver = true;
 	
-	floorTexture.loadFromFile("assets/floor.png");
-	crateTexture.loadFromFile("assets/rawMeat.png");
+	
 	int totRows = 5;
 	int totCols = 5;
 	int tileSize = 256;
@@ -173,7 +171,13 @@ void Game::trigerCurse() {
 			int randRow = rand() % (totRows);
 
 			sf::IntRect randFrame({ randCol * tileSize, randRow * tileSize }, { tileSize,tileSize });
-			wall->setCrused(cursedWallSheet, randFrame);
+			wall->setCrused(texHandler.get("cursed_wall"), randFrame);
+		}
+		else if(Crate* crate = dynamic_cast<Crate*>(gameObjs[i].get())) {
+			crate->setCursed(texHandler.get("cursed_crate"));
+		}
+		else if (Floor* floor = dynamic_cast<Floor*>(gameObjs[i].get())) {
+			floor->setCursed(texHandler.get("cursed_floor"));
 		}
 		
 
@@ -184,9 +188,6 @@ void Game::trigerCurse() {
 void Game::restartGame() {
 	curseTrig = false;
 	gameOver = false;
-	floorTexture.loadFromFile("assets/wall.png");
-	crateTexture.loadFromFile("assets/crate.png");
-	wallTexture = normalWallText;
 	gameObjs.clear();
 	loadLevel();
 }
