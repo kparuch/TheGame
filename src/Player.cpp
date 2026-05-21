@@ -71,20 +71,22 @@ void Player::update( std::vector<std::unique_ptr<Entity>>& entities) {
         
         sprite.setTexture(curseTex);
 
-        if (curseState == CursedState::Hit) {
-            if (hitAnimTimer.getElapsedTime().asSeconds() >= 0.15f) { // Wrócmy do dobrych wartości!
+        if (curseTime.getElapsedTime().asSeconds() >= 4.0f) {
+            ;
+      
+
+            if ((int)(curseTime.getElapsedTime().asSeconds() * 2.0f) % 2 == 0) {
+                curseState = CursedState::Hit;
+                
+            }
+            else {
                 curseState = CursedState::PostHit;
-                hitAnimTimer.restart();
+                
             }
         }
-        // 2. TUTAJ MUSI BYĆ 'else if' - Jeśli jesteśmy w Hit, komputer zignoruje wszystko poniżej!
-        else if (curseState == CursedState::PostHit) {
-            if (hitAnimTimer.getElapsedTime().asSeconds() >= 0.5f) {
-                curseState = CursedState::Idle;
-            }
-        }
-        // 3. To 'else' wykona się TYLKO wtedy, gdy nie jesteśmy ani w Hit, ani w PostHit
         else {
+
+       
             if (isMoving) {
                 curseState = CursedState::Move;
             }
@@ -99,13 +101,13 @@ void Player::update( std::vector<std::unique_ptr<Entity>>& entities) {
         int frameWidth = curseTex.getSize().x / 2;
         switch (curseState) {
         case CursedState::Idle:    col = 0; row = 0; break;
-        case CursedState::Move:    col = 1; row = 0; break;
-        case CursedState::Hit:     col = 0; row = 1; break;
+        case CursedState::Move:    col = 0; row = 1; break;
+        case CursedState::Hit:     col = 1; row = 0; break;
         case CursedState::PostHit: col = 1; row = 1; break;
         }
         sprite.setScale({ 0.18f,0.18f });
         sprite.setTextureRect(sf::IntRect({ col * frameWidth, row * frameHeight }, { frameWidth, frameHeight }));
-        
+        sprite.setColor(sf::Color(255, 99, 71));
         lastPos = currentPos;
         
     }
@@ -117,11 +119,12 @@ void Player::update( std::vector<std::unique_ptr<Entity>>& entities) {
             _hp = 1;
         }
         sprite.setTexture(normTex); 
-        
+        sprite.setColor(sf::Color(150, 150, 150));
         
     }
     else {
         sprite.setTexture(normTex);
+        sprite.setColor(sf::Color::White);
     }
     if (currentState == PlayerState::TakeDamage) {
         if (actionTimer.getElapsedTime().asSeconds()>actionDurr) {
@@ -196,10 +199,6 @@ void Player::update( std::vector<std::unique_ptr<Entity>>& entities) {
                     if (crate->isDestroyed()) continue;
                     crate->destroy();
 
-                    if (curseState != CursedState::Hit) {
-                        curseState = CursedState::Hit;
-                        hitAnimTimer.restart();
-                    }
 
                     continue;
                 }
@@ -228,8 +227,6 @@ void Player::update( std::vector<std::unique_ptr<Entity>>& entities) {
                     if (crate->isDestroyed()) continue;
                     crate->destroy();
                     
-                    curseState = CursedState::Hit;
-                    hitAnimTimer.restart();
 
                     continue;
                 }
@@ -246,8 +243,10 @@ void Player::update( std::vector<std::unique_ptr<Entity>>& entities) {
             }
         }
     }
-
-    updateAnimation();
+    if (!_isCursed) {
+        updateAnimation();
+    }
+   
 }
 void Player::draw(sf::RenderWindow& window) {
     window.draw(sprite);
