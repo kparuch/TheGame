@@ -58,7 +58,7 @@ void Player::update( std::vector<std::unique_ptr<Entity>>& entities) {
         }
 
         
-        if (curseTime.getElapsedTime().asSeconds() >= 8.0f) {
+        if (curseTime.getElapsedTime().asSeconds() >= 10.0f) {
             _isCursed = false;
             _hasDebuff = true;
             _speed = 1.5f;
@@ -71,7 +71,7 @@ void Player::update( std::vector<std::unique_ptr<Entity>>& entities) {
         
         sprite.setTexture(curseTex);
 
-        if (curseTime.getElapsedTime().asSeconds() >= 4.0f) {
+        if (curseTime.getElapsedTime().asSeconds() >= 5.0f) {
             ;
       
 

@@ -7,5 +7,5 @@ TinFoil::TinFoil(float x, float y, const sf::Texture& texture)
 {
 }
 void TinFoil::applyEffect(Player* p) {
-    p->addBombRange(2, 2, 0, 0);
+    p->addBombRange(1, 1, 1, 1);
 }

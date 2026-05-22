@@ -28,8 +28,9 @@ private:
 	bool forceExplode = false;
 	bool isPassable;
 	BombStats _stats;
+	sf::SoundBuffer explosionSound;
 public:
-	Bomb(float x, float y, const sf::Texture& bombText, const sf::Texture &expText,BombStats _stats);
+	Bomb(float x, float y, const sf::Texture& bombText, const sf::Texture &expText, const sf::SoundBuffer &expSound,BombStats _stats);
 	~Bomb() = default;
 	bool isSolid() const override{ return !isPassable; }
 	bool isDestroyed() const override { return isExploded;}

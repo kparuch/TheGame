@@ -6,12 +6,12 @@
 #include <cmath> 
 #include <vector>
 
-Bomb::Bomb(float x, float y, const sf::Texture& bombText, const sf::Texture& expText, BombStats stats)
-    : sprite(bombText), explosionTexture(expText), isExploded(false), _stats(stats), isPassable(true)
+Bomb::Bomb(float x, float y, const sf::Texture& bombText, const sf::Texture& expText, const sf::SoundBuffer& expSound, BombStats stats)
+    : sprite(bombText), explosionTexture(expText), isExploded(false), _stats(stats), isPassable(true), explosionSound(expSound)
 {
     sprite.setPosition({ x, y });
     sprite.setScale({ 0.20f, 0.20f });
-
+    
     frameWidth = bombText.getSize().x / 2;  
     frameHeight = bombText.getSize().y / 3;
 

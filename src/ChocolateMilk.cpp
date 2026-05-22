@@ -4,6 +4,6 @@ ChocolateMilk::ChocolateMilk(float x, float y, const sf::Texture& texture) :Pick
 void ChocolateMilk::applyEffect(Player* p) {
 	p->addHp(2);
 	p->addBomb(2);
-	p->addBombRange(-1, 3, 2, -2);
-	p->speedUp(0.8f);
+	p->addBombRange(3, 3, -2, -2);
+	p->speedUp(1.6f);
 }
