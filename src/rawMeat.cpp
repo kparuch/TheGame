@@ -19,5 +19,6 @@ void RawMeat::applyEffect(Player* p) {
 	else {
 		p->addHp(2);
 		p->speedUp(0.75f);
+		p->addBomb(1);
 	}
 }

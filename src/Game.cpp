@@ -8,7 +8,8 @@
 #include "Pickup.h"
 #include <random>
 #include "PickupFactory.h"
-
+#include "Menu.h"
+#include <memory>
 Game::Game() {
 	window.create(sf::VideoMode({ 1920,1080 }), "Soyman II The Way of the Bomb ");
 	window.setFramerateLimit(30);
@@ -21,6 +22,8 @@ Game::Game() {
 	texHandler.load("cursedPlayer", "assets/cursedPlayer.png");
 	texHandler.load("bomb", "assets/bomb.png");
 	texHandler.load("explosion", "assets/boomver00.png");
+	texHandler.load("menuBg", "assets/loadingBg.png");
+
 	//curse
 	texHandler.load("cursed_wall", "assets/trollBombsUpdated.png");
 	texHandler.load("cursed_crate", "assets/rawMeat.png");
@@ -31,7 +34,8 @@ Game::Game() {
 	texHandler.load("rawMeatG", "assets/rawMeatG.png");
 	texHandler.load("chocoMilk", "assets/chocolateMilk.png");
 	texHandler.load("soy", "assets/soyMilk.png");
-	loadLevel();
+	mainMenu = std::make_unique<MainMenu>(texHandler.get("menuBg"));
+	//loadLevel();
 };
 Game::~Game() {};
 void Game::run() {
@@ -46,8 +50,22 @@ void Game::processEvent() {
 		if (event->is<sf::Event::Closed>()) {
 			window.close();
 		}
-		if(const auto* mousePressed = event->getIf<sf::Event::MouseButtonPressed>()){
-			if (gameOver && mousePressed->button == sf::Mouse::Button::Left) {
+		if (const auto* mousePressed = event->getIf<sf::Event::MouseButtonPressed>()) {
+
+			if (currentGameState == GameState::Menu && mousePressed->button == sf::Mouse::Button::Left) {
+
+				MenuState action = mainMenu->handleMouseClick(window);
+
+				if (action == MenuState::Play) {
+					currentGameState = GameState::FreePlay; 
+					loadLevel();                            
+				}
+				else if (action == MenuState::Exit) {
+					window.close();                         
+				}
+			}
+		
+		else if (gameOver && mousePressed->button == sf::Mouse::Button::Left) {
 				sf::Vector2i mousePos = sf::Mouse::getPosition(window);
 				restartGame();
 			}
@@ -56,13 +74,29 @@ void Game::processEvent() {
 }
 void Game::render() {
 	window.clear();
-	for (auto& obj : gameObjs) {
-		obj->draw(window);
+	window.clear(sf::Color::Black);
+
+	
+	if (currentGameState == GameState::Menu) {
+		if (mainMenu) {
+			mainMenu->draw(window);
+		}
 	}
+	else if (currentGameState == GameState::FreePlay) {
+		for (auto& obj : gameObjs) {
+			obj->draw(window);
+		}
+	}
+	
 	window.display();
 }
 void Game::update() {
-	
+	if (currentGameState == GameState::Menu) {
+		if (mainMenu) {
+			mainMenu->update(window); 
+		}
+		return; 
+	}
 	for (uint16_t i = 0; i < gameObjs.size(); ++i) {
 		gameObjs[i]->update(gameObjs);
 

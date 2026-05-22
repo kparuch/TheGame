@@ -20,6 +20,7 @@
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="src\Bomb.cpp" />
+    <ClCompile Include="src\Button.cpp" />
     <ClCompile Include="src\ChocolateMilk.cpp" />
     <ClCompile Include="src\Crate.cpp" />
     <ClCompile Include="src\Enemy.cpp" />
@@ -28,6 +29,7 @@
     <ClCompile Include="src\Floor.cpp" />
     <ClCompile Include="src\Game.cpp" />
     <ClCompile Include="src\main.cpp" />
+    <ClCompile Include="src\Menu.cpp" />
     <ClCompile Include="src\PickUp.cpp" />
     <ClCompile Include="src\PickupFactory.cpp" />
     <ClCompile Include="src\Player.cpp" />
@@ -39,12 +41,14 @@
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="include\Bomb.h" />
+    <ClInclude Include="include\Button.h" />
     <ClInclude Include="include\ChocolateMilk.h" />
     <ClInclude Include="include\Crate.h" />
     <ClInclude Include="include\Entity.h" />
     <ClInclude Include="include\ExplosionArea.h" />
     <ClInclude Include="include\Floor.h" />
     <ClInclude Include="include\Game.h" />
+    <ClInclude Include="include\Menu.h" />
     <ClInclude Include="include\Pickup.h" />
     <ClInclude Include="include\PickupFactory.h" />
     <ClInclude Include="include\Player.h" />
