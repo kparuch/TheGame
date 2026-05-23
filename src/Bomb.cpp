@@ -6,8 +6,8 @@
 #include <cmath> 
 #include <vector>
 
-Bomb::Bomb(float x, float y, const sf::Texture& bombText, const sf::Texture& expText, const sf::SoundBuffer& expSound, BombStats stats)
-    : sprite(bombText), explosionTexture(expText), isExploded(false), _stats(stats), isPassable(true), explosionSound(expSound)
+Bomb::Bomb(float x, float y, const sf::Texture& bombText, const sf::Texture& expText, BombStats stats, const sf::SoundBuffer &soundBuff)
+    : sprite(bombText), explosionTexture(expText), isExploded(false), _stats(stats), isPassable(true), explosionSound(soundBuff)
 {
     sprite.setPosition({ x, y });
     sprite.setScale({ 0.20f, 0.20f });
@@ -125,9 +125,10 @@ void Bomb::update(std::vector<std::unique_ptr<Entity>>& entities) {
                 }
             }
         } 
-
+        bool isFirstTile = true;
         for (const auto& pos : firePos) {
-            entities.push_back(std::make_unique<ExplosionArea>(pos.x, pos.y, explosionTexture));
+            entities.push_back(std::make_unique<ExplosionArea>(pos.x, pos.y, explosionTexture, explosionSound, isFirstTile));
+            isFirstTile = false;
         }
     }
 }

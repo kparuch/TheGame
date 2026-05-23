@@ -2,6 +2,7 @@
 #include "Entity.h"
 #include <SFML/System/Clock.hpp>
 #include "Bomb.h"
+#include <SFML/Audio.hpp>
 enum class CursedState {
 	Idle,
 	Move,
@@ -43,10 +44,11 @@ private:
 	CursedState curseState;
 	sf::Texture normTex;
 	sf::Clock hitAnimTimer;
+	const sf::SoundBuffer& bombSoundBuf;
 
 
 public:
-	Player(float x, float y, const sf::Texture& texture, const sf::Texture& bombTexRef,const sf::Texture &explTexRef, const sf::Texture &curseTex);
+	Player(float x, float y, const sf::Texture& texture, const sf::Texture& bombTexRef,const sf::Texture &explTexRef, const sf::Texture &curseTex, const sf::SoundBuffer& soundBuf);
 
 	void update(std::vector<std::unique_ptr<Entity>>& entities) override;
 	sf::FloatRect getBounds() const override { return sprite.getGlobalBounds(); }

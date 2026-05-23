@@ -12,7 +12,7 @@ void RawMeat::applyEffect(Player* p) {
 	
 	int drop = dis(gen);
 	if (drop < 4) {
-		p->speedUp(-0.15f);
+		p->speedUp(-0.35f);
 		p->takeDamage(true);
 		p->addBomb(1);
 	}
@@ -21,4 +21,10 @@ void RawMeat::applyEffect(Player* p) {
 		p->speedUp(0.75f);
 		p->addBomb(1);
 	}
+	
+	/* 
+	uhh I wouldn't eat raw meat personally, but since being primal is optimal, the raw meat pickup reflects its real life outcomes:
+
+	either you get pretty bad food poisoning and lose hp, get slower and gain a bomb, or you get a small hp boost, a speed boost and a bomb.
+	*/
 }

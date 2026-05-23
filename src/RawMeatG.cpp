@@ -19,4 +19,10 @@ void RawMeatG::applyEffect(Player* p) {
 		}
 		p->activateCurse();
 	}
+
+	/*
+	my favourite pick-up which took the longest to implement
+	imagine benefits of raw meat multiplied by 10, what is the curse you may ask?
+	... just don't stop moving ...
+	*/
 }

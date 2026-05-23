@@ -10,10 +10,11 @@
 #include "PickupFactory.h"
 #include "Menu.h"
 #include <memory>
-Game::Game() {
+
+Game::Game(): gameOverText(mainFont, "GAME OVER", 120),deathSound(deathSoundBuf) {
 	window.create(sf::VideoMode({ 1920,1080 }), "Soyman II The Way of the Bomb ");
 	window.setFramerateLimit(30);
-	
+	explosionSound.loadFromFile("assets/sounds/boom.mp3");
 	//essentials
 	texHandler.load("wall", "assets/idWall.png");
 	texHandler.load("crate", "assets/crate.png");
@@ -23,6 +24,8 @@ Game::Game() {
 	texHandler.load("bomb", "assets/bomb.png");
 	texHandler.load("explosion", "assets/boomver00.png");
 	texHandler.load("menuBg", "assets/loadingBg.png");
+	
+	mainFont.openFromFile("assets/font/castellarReg.ttf");
 
 	//curse
 	texHandler.load("cursed_wall", "assets/trollBombsUpdated.png");
@@ -34,8 +37,31 @@ Game::Game() {
 	texHandler.load("rawMeatG", "assets/rawMeatG.png");
 	texHandler.load("chocoMilk", "assets/chocolateMilk.png");
 	texHandler.load("soy", "assets/soyMilk.png");
+	texHandler.load("pigeon", "assets/pigeonUp.png");
+	texHandler.load("chocoMilkG", "assets/MilchG.png");
+	texHandler.load("bombUp", "assets/fixBombUp.png");
+	texHandler.load("???", "assets/errorUp.png");
 	mainMenu = std::make_unique<MainMenu>(texHandler.get("menuBg"));
-	//loadLevel();
+	//essentials2
+	gameOverText.setFont(mainFont);
+	 
+	gameOverText.setFillColor(sf::Color::Red);
+	gameOverText.setOutlineColor(sf::Color::Black);
+	gameOverText.setOutlineThickness(5.f);
+	deathSoundBuf.loadFromFile("assets/sounds/death.mp3");
+	deathSound.setBuffer(deathSoundBuf);
+
+	sf::FloatRect textRect = gameOverText.getLocalBounds();
+	gameOverText.setOrigin({
+		textRect.position.x + textRect.size.x / 2.0f,
+		textRect.position.y + textRect.size.y / 2.0f
+		});
+
+	gameOverText.setPosition({ 1920.f / 2.0f, 1080.f / 2.0f });
+
+
+
+
 };
 Game::~Game() {};
 void Game::run() {
@@ -87,6 +113,9 @@ void Game::render() {
 			obj->draw(window);
 		}
 	}
+	if (gameOver) {
+            window.draw(gameOverText);
+        }
 	
 	window.display();
 }
@@ -160,22 +189,22 @@ void Game::loadLevel() {
 			//"#E  XXX X XXX  E#",
 			//"#################",
 		"#########################",
-	"#P  XX XXXXX XXXXX XX  E#",
-	"# #X#X#X#X#X#X#X#X#X#X# #",
-	"# XXXX XXXXX XXXXX XXXX #",
-	"#X#X# #X#X#X#X#X#X# #X#X#",
-	"# XXXXXXXX X XXXXXXXX X #",
-	"#X#X#X#X#X# #X#X#X#X#X#X#",
-	"# XXXX XXXXX XXXXX XXXX #",
-	"#X#X#X# #X#X#X#X# #X#X#X#",
-	"# XXXX XXXXX XXXXX XXXX #",
-	"#X#X#X#X#X# #X#X#X#X#X#X#",
-	"# XXXXXXXX X XXXXXXXX X #",
-	"#X#X# #X#X#X#X#X#X# #X#X#",
-	"# XXXX XXXXX XXXXX XXXX #",
-	"# #X#X#X#X#X#X#X#X#X#X# #",
-	"#E  XX XXXXX XXXXX XX  E#",
-	"#########################"
+		"#P  XX XXXXX XXXXX XX  E#",
+		"# #X#X#X#X#X#X#X#X#X#X# #",
+		"# XXXX XXXXX XXXXX XXXX #",
+		"#X#X# #X#X#X#X#X#X# #X#X#",
+		"# XXXXXXXX X XXXXXXXX X #",
+		"#X#X#X#X#X# #X#X#X#X#X#X#",
+		"# XXXX XXXXX XXXXX XXXX #",
+		"#X#X#X# #X#X#X#X# #X#X#X#",
+		"# XXXX XXXXX XXXXX XXXX #",
+		"#X#X#X#X#X# #X#X#X#X#X#X#",
+		"# XXXXXXXX X XXXXXXXX X #",
+		"#X#X# #X#X#X#X#X#X# #X#X#",
+		"# XXXX XXXXX XXXXX XXXX #",
+		"# #X#X#X#X#X#X#X#X#X#X# #",
+		"#E  XX XXXXX XXXXX XX  E#",
+		"#########################"
 
 	};
 	float tileSize = 64.0f;
@@ -209,7 +238,11 @@ void Game::loadLevel() {
 			texHandler.get("normPlayer"),
 			texHandler.get("bomb"),
 			texHandler.get("explosion"),
-			texHandler.get("cursedPlayer")));
+			texHandler.get("cursedPlayer"),
+			explosionSound
+
+		));
+
 	}
 }
 void Game::trigerCurse() {
@@ -217,6 +250,8 @@ void Game::trigerCurse() {
 	curseTrig = true;
 	gameOver = true;
 	
+	deathSound.setVolume(50.f);
+	deathSound.play();
 	
 	int totRows = 5;
 	int totCols = 5;
@@ -244,6 +279,7 @@ void Game::trigerCurse() {
 void Game::restartGame() {
 	curseTrig = false;
 	gameOver = false;
+	deathSound.stop();
 	gameObjs.clear();
 	loadLevel();
 }

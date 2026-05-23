@@ -5,8 +5,9 @@
 #include "Crate.h"
 #include "Pickup.h"
 #include <iostream>
-Player::Player(float x, float y, const sf::Texture& normtexture, const sf::Texture &bombTex, const sf::Texture &explTex, const sf::Texture &curse)
-    :sprite(normtexture), currentState(PlayerState::Idle), bombTexRef(bombTex),explTexRef(explTex), curseTex(curse)
+#include <SFML/Audio.hpp>
+Player::Player(float x, float y, const sf::Texture& normtexture, const sf::Texture &bombTex, const sf::Texture &explTex, const sf::Texture &curse, const sf::SoundBuffer& soundBuf)
+    :sprite(normtexture), currentState(PlayerState::Idle), bombTexRef(bombTex),explTexRef(explTex), curseTex(curse), bombSoundBuf(soundBuf)
 {
     sprite.setPosition({ x, y });
     sprite.setScale({ 0.18f, 0.18f });
@@ -49,11 +50,12 @@ void Player::update( std::vector<std::unique_ptr<Entity>>& entities) {
             idleTimer.restart();
         }
         else {
-            if (idleTimer.getElapsedTime().asSeconds() >= 2.0f) {
+            if (idleTimer.getElapsedTime().asSeconds() >= 1.5f) {
                 _isCursed = false;
                 setHp(1);
                 takeDamage(true);
                 return;
+                
             }
         }
 
@@ -170,7 +172,7 @@ void Player::update( std::vector<std::unique_ptr<Entity>>& entities) {
                 float gridY = std::round(sprite.getPosition().y / 64.0f) * 64.0f;
                 currentState = PlayerState::PlacingBomb;
                 actionTimer.restart();
-                entities.push_back(std::make_unique<Bomb>(gridX, gridY, bombTexRef, explTexRef,  _currentBombStats));
+                entities.push_back(std::make_unique<Bomb>(gridX, gridY, bombTexRef, explTexRef,  _currentBombStats, bombSoundBuf));
                 bombCooldown.restart();
             }
 
@@ -283,10 +285,10 @@ void Player::addBomb(int amount) {
 
 void Player::speedUp(float val) {
     _speed += val;
-    if (_speed < 4.0f) {
-        _speed = 4.0f;
+    if (_speed < 3.5f) {
+        _speed = 3.5f;
     }
-    else if (_speed > 10.5f) {
+    else if (_speed >= 10.5f) {
         _speed = 10.5f;
     }
 }

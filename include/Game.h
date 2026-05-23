@@ -7,6 +7,7 @@
 #include "Pickup.h"
 #include "TextureManager.h"
 #include "Menu.h"
+#include <SFML/Audio.hpp>
 enum class GameState {
 	Menu,
 	Play,
@@ -31,6 +32,13 @@ private:
 	TextureManager texHandler;
 	GameState currentGameState=GameState::Menu;
 	std::unique_ptr<MainMenu>mainMenu;
+	sf::SoundBuffer explosionSound;
+	sf::Font mainFont;
+	sf::Text gameOverText;
+	
+	sf::SoundBuffer deathSoundBuf;
+	sf::Sound deathSound;
+	
 public:
 	Game();
 	virtual ~Game();
