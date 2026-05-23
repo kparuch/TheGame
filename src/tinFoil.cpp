@@ -8,4 +8,6 @@ TinFoil::TinFoil(float x, float y, const sf::Texture& texture)
 }
 void TinFoil::applyEffect(Player* p) {
     p->addBombRange(1, 1, 1, 1);
+
+    //increases range, just like tinfoil
 }

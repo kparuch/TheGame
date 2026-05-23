@@ -20,8 +20,11 @@
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="src\Bomb.cpp" />
+    <ClCompile Include="src\BombBinary.cpp" />
+    <ClCompile Include="src\BombPickup.cpp" />
     <ClCompile Include="src\Button.cpp" />
     <ClCompile Include="src\ChocolateMilk.cpp" />
+    <ClCompile Include="src\ChocolateMilkG.cpp" />
     <ClCompile Include="src\Crate.cpp" />
     <ClCompile Include="src\Enemy.cpp" />
     <ClCompile Include="src\Entity.cpp" />
@@ -32,6 +35,7 @@
     <ClCompile Include="src\Menu.cpp" />
     <ClCompile Include="src\PickUp.cpp" />
     <ClCompile Include="src\PickupFactory.cpp" />
+    <ClCompile Include="src\Pigeon.cpp" />
     <ClCompile Include="src\Player.cpp" />
     <ClCompile Include="src\RawMeat.cpp" />
     <ClCompile Include="src\RawMeatG.cpp" />
@@ -41,8 +45,11 @@
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="include\Bomb.h" />
+    <ClInclude Include="include\BombBinary.h" />
+    <ClInclude Include="include\BombPickup.h" />
     <ClInclude Include="include\Button.h" />
     <ClInclude Include="include\ChocolateMilk.h" />
+    <ClInclude Include="include\ChocolateMilkG.h" />
     <ClInclude Include="include\Crate.h" />
     <ClInclude Include="include\Entity.h" />
     <ClInclude Include="include\ExplosionArea.h" />
@@ -51,6 +58,7 @@
     <ClInclude Include="include\Menu.h" />
     <ClInclude Include="include\Pickup.h" />
     <ClInclude Include="include\PickupFactory.h" />
+    <ClInclude Include="include\Pigeon.h" />
     <ClInclude Include="include\Player.h" />
     <ClInclude Include="include\RawMeat.h" />
     <ClInclude Include="include\RawMeatG.h" />
