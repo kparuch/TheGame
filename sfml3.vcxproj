@@ -31,6 +31,7 @@
     <ClCompile Include="src\ExplosionArea.cpp" />
     <ClCompile Include="src\Floor.cpp" />
     <ClCompile Include="src\Game.cpp" />
+    <ClCompile Include="src\Info.cpp" />
     <ClCompile Include="src\main.cpp" />
     <ClCompile Include="src\Menu.cpp" />
     <ClCompile Include="src\PickUp.cpp" />
@@ -56,6 +57,7 @@
     <ClInclude Include="include\ExplosionArea.h" />
     <ClInclude Include="include\Floor.h" />
     <ClInclude Include="include\Game.h" />
+    <ClInclude Include="include\Info.h" />
     <ClInclude Include="include\Menu.h" />
     <ClInclude Include="include\Pickup.h" />
     <ClInclude Include="include\PickupFactory.h" />

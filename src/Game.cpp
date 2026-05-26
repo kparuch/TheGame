@@ -38,7 +38,8 @@ Game::Game(): gameOverText(mainFont, "GAME OVER", 120),deathSound(deathSoundBuf)
 	texHandler.load("cursedPlayer", "assets/cursedPlayer.png");
 	texHandler.load("bomb", "assets/bomb.png");
 	texHandler.load("explosion", "assets/boomver00.png");
-	texHandler.load("menuBg", "assets/loadingBg.png");
+	texHandler.load("menuBg", "assets/menuBgVer3.png");
+	texHandler.load("menuBtns", "assets/menuBtnsVer2.png");
 	texHandler.load("enemy", "assets/enemyVer2.png");
 	mainFont.openFromFile("assets/font/castellarReg.ttf");
 
@@ -56,7 +57,7 @@ Game::Game(): gameOverText(mainFont, "GAME OVER", 120),deathSound(deathSoundBuf)
 	texHandler.load("chocoMilkG", "assets/MilchG.png");
 	texHandler.load("bombUp", "assets/fixBombUp.png");
 	texHandler.load("???", "assets/errorUp.png");
-	mainMenu = std::make_unique<MainMenu>(texHandler.get("menuBg"));
+	mainMenu = std::make_unique<MainMenu>(texHandler.get("menuBg"), texHandler.get("menuBtns"));
 	//essentials2
 	gameOverText.setFont(mainFont);
 	 
