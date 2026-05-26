@@ -29,8 +29,9 @@ private:
 	bool isPassable;
 	BombStats _stats;
 	const sf::SoundBuffer &explosionSound;
+	Entity* _owner; //essential 
 public:
-	Bomb(float x, float y, const sf::Texture& bombText, const sf::Texture &expText ,BombStats _stats, const sf::SoundBuffer & explosionSound);
+	Bomb(float x, float y, const sf::Texture& bombText, const sf::Texture &expText ,BombStats _stats, const sf::SoundBuffer & explosionSound, Entity* owner);
 	~Bomb() = default;
 	bool isSolid() const override{ return !isPassable; }
 	bool isDestroyed() const override { return isExploded;}
@@ -38,4 +39,5 @@ public:
 	void draw(sf::RenderWindow& window) override;
 	void update(std::vector<std::unique_ptr<Entity>>& entities) override;
 	void triggerExplosion() { forceExplode = true; }
+	Entity* getOwner() const { return _owner; }
 };

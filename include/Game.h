@@ -38,9 +38,13 @@ private:
 	
 	sf::SoundBuffer deathSoundBuf;
 	sf::Sound deathSound;
+	sf::Music bgMusic;
+	std::vector<std::string> playlist;
+	int currentTrackId = 0;
 	
 public:
 	Game();
 	virtual ~Game();
 	void run();
+	void updateMusic();
 };

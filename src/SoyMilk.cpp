@@ -15,3 +15,8 @@ void SoyMilk::applyEffect(Player* p) {
 	
 	*/
 }
+void SoyMilk::applyEffect(Enemy* e) {
+	e->addBombRange(-3, -3, -5, -5);
+	e->speedUp(-1.5f);
+	e->setHp(2);
+}

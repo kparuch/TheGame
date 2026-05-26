@@ -51,6 +51,7 @@
     <ClInclude Include="include\ChocolateMilk.h" />
     <ClInclude Include="include\ChocolateMilkG.h" />
     <ClInclude Include="include\Crate.h" />
+    <ClInclude Include="include\Enemy.h" />
     <ClInclude Include="include\Entity.h" />
     <ClInclude Include="include\ExplosionArea.h" />
     <ClInclude Include="include\Floor.h" />

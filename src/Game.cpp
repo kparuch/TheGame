@@ -10,10 +10,25 @@
 #include "PickupFactory.h"
 #include "Menu.h"
 #include <memory>
+#include "Enemy.h"
 
 Game::Game(): gameOverText(mainFont, "GAME OVER", 120),deathSound(deathSoundBuf) {
 	window.create(sf::VideoMode({ 1920,1080 }), "Soyman II The Way of the Bomb ");
 	window.setFramerateLimit(30);
+	//playlist for nice bg music :vv
+	playlist = {
+		"assets/sounds/bgSound01.mp3",
+		"assets/sounds/bgSound02.mp3",
+		"assets/sounds/bgSound03.mp3",
+		"assets/sounds/bgSound04.mp3",
+		"assets/sounds/bgSound05.mp3",
+		"assets/sounds/bgSound06.mp3",
+		"assets/sounds/bgSound010.mp3",
+	};
+	if (!playlist.empty()) {
+		bgMusic.openFromFile(playlist[0]);
+		bgMusic.setVolume(18.5f); 
+	}
 	explosionSound.loadFromFile("assets/sounds/boom.mp3");
 	//essentials
 	texHandler.load("wall", "assets/idWall.png");
@@ -24,7 +39,7 @@ Game::Game(): gameOverText(mainFont, "GAME OVER", 120),deathSound(deathSoundBuf)
 	texHandler.load("bomb", "assets/bomb.png");
 	texHandler.load("explosion", "assets/boomver00.png");
 	texHandler.load("menuBg", "assets/loadingBg.png");
-	
+	texHandler.load("enemy", "assets/enemyVer2.png");
 	mainFont.openFromFile("assets/font/castellarReg.ttf");
 
 	//curse
@@ -71,6 +86,23 @@ void Game::run() {
 		update();
 	}
 };
+void Game::updateMusic() {
+
+	if (currentGameState == GameState::FreePlay && !gameOver) {
+		if (bgMusic.getStatus() == sf::Music::Status::Stopped) {
+			currentTrackId++;
+			if (currentTrackId >= playlist.size()) {
+				currentTrackId = 0;
+			}
+			bgMusic.openFromFile(playlist[currentTrackId]);
+			bgMusic.setVolume(25.f);
+			bgMusic.play();
+		}
+	}
+	else if (gameOver && bgMusic.getStatus() == sf::Music::Status::Playing) {
+		bgMusic.stop();
+	}
+}
 void Game::processEvent() {
 	while (const std::optional event = window.pollEvent()) {
 		if (event->is<sf::Event::Closed>()) {
@@ -109,8 +141,18 @@ void Game::render() {
 		}
 	}
 	else if (currentGameState == GameState::FreePlay) {
+
+		
 		for (auto& obj : gameObjs) {
-			obj->draw(window);
+			if (dynamic_cast<Floor*>(obj.get())) {
+				obj->draw(window);
+			}
+		}
+
+		for (auto& obj : gameObjs) {
+			if (!dynamic_cast<Floor*>(obj.get())) {
+				obj->draw(window);
+			}
 		}
 	}
 	if (gameOver) {
@@ -120,6 +162,7 @@ void Game::render() {
 	window.display();
 }
 void Game::update() {
+	updateMusic();
 	if (currentGameState == GameState::Menu) {
 		if (mainMenu) {
 			mainMenu->update(window); 
@@ -173,21 +216,20 @@ void Game::update() {
 		), gameObjs.end()
 	);
 }
+//"#################",
+	//"#P  XXX X XXX XE#",
+	//"# #X#X#X#X#X#X# #",
+	//"# X XXX X XXX X #",
+	//"#X#X#X#X#X#X#X#X#",
+	//"#XXXXXXXXXXXXXXX#",
+	//"#XXXXXXXXXXXXXXX#",
+	//"#X#X#X#X#X#X#X#X#",
+	//"#XX XXX X XXX XX#",
+	//"# #X#X#X#X#X#X# #",
+	//"#E  XXX X XXX  E#",
+	//"#################",
 void Game::loadLevel() {
-	//level 1 -> more to come 
 	std::vector<std::string> map = {
-			//"#################",
-			//"#P  XXX X XXX XE#",
-			//"# #X#X#X#X#X#X# #",
-			//"# X XXX X XXX X #",
-			//"#X#X#X#X#X#X#X#X#",
-			//"#XXXXXXXXXXXXXXX#",
-			//"#XXXXXXXXXXXXXXX#",
-			//"#X#X#X#X#X#X#X#X#",
-			//"#XX XXX X XXX XX#",
-			//"# #X#X#X#X#X#X# #",
-			//"#E  XXX X XXX  E#",
-			//"#################",
 		"#########################",
 		"#P  XX XXXXX XXXXX XX  E#",
 		"# #X#X#X#X#X#X#X#X#X#X# #",
@@ -203,26 +245,27 @@ void Game::loadLevel() {
 		"#X#X# #X#X#X#X#X#X# #X#X#",
 		"# XXXX XXXXX XXXXX XXXX #",
 		"# #X#X#X#X#X#X#X#X#X#X# #",
-		"#E  XX XXXXX XXXXX XX  E#",
+		"#   XX XXXXX XXXXX XX  X#",
 		"#########################"
-
 	};
+
 	float tileSize = 64.0f;
 	float playerPosX = 0.f;
 	float playerPosY = 0.f;
 	bool playerDetected = false;
+
+	// 1. TYLKO SKANUJEMY I SPAWNUJEMY ŚRODOWISKO / WROGÓW
 	for (int y = 0; y < map.size(); ++y) {
 		for (int x = 0; x < map[y].size(); ++x) {
 			float posX = x * tileSize;
 			float posY = y * tileSize;
 
 			gameObjs.push_back(std::make_unique<Floor>(posX, posY, texHandler.get("floor")));
+
 			if (map[y][x] == 'P') {
-			
 				playerPosX = posX;
 				playerPosY = posY;
 				playerDetected = true;
-				std::cout << "Player detected at: " << playerDetected << " " << playerPosY << "\n";
 			}
 			if (map[y][x] == 'X') {
 				gameObjs.push_back(std::make_unique<Crate>(posX, posY, texHandler.get("crate")));
@@ -230,19 +273,24 @@ void Game::loadLevel() {
 			if (map[y][x] == '#') {
 				gameObjs.push_back(std::make_unique<Wall>(posX, posY, texHandler.get("wall")));
 			}
+			if (map[y][x] == 'E') {
+				gameObjs.push_back(std::make_unique<Enemy>(posX, posY, texHandler.get("enemy"), texHandler.get("bomb"), texHandler.get("explosion"), 5.f, explosionSound));
+			}
 		}
-	}
-	
+	} // <-- TUTAJ KOŃCZY SIĘ ZEWNĘTRZNA PĘTLA Y
+
+	// 2. SPAWNUJEMY GRACZA NA SAMYM KOŃCU (Tylko jeden raz!)
 	if (playerDetected) {
-		gameObjs.push_back(std::make_unique<Player>(playerPosX, playerPosY,
+		std::cout << "Player spawned at: " << playerPosX << " " << playerPosY << "\n";
+		gameObjs.push_back(std::make_unique<Player>(
+			playerPosX,
+			playerPosY,
 			texHandler.get("normPlayer"),
 			texHandler.get("bomb"),
 			texHandler.get("explosion"),
 			texHandler.get("cursedPlayer"),
 			explosionSound
-
 		));
-
 	}
 }
 void Game::trigerCurse() {
@@ -283,3 +331,4 @@ void Game::restartGame() {
 	gameObjs.clear();
 	loadLevel();
 }
+	

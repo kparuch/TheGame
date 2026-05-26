@@ -6,8 +6,8 @@
 #include <cmath> 
 #include <vector>
 
-Bomb::Bomb(float x, float y, const sf::Texture& bombText, const sf::Texture& expText, BombStats stats, const sf::SoundBuffer &soundBuff)
-    : sprite(bombText), explosionTexture(expText), isExploded(false), _stats(stats), isPassable(true), explosionSound(soundBuff)
+Bomb::Bomb(float x, float y, const sf::Texture& bombText, const sf::Texture& expText, BombStats stats, const sf::SoundBuffer &soundBuff, Entity* owner)
+    : sprite(bombText), explosionTexture(expText), isExploded(false), _stats(stats), isPassable(true), explosionSound(soundBuff), _owner(owner)
 {
     sprite.setPosition({ x, y });
     sprite.setScale({ 0.20f, 0.20f });

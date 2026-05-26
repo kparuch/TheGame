@@ -1,8 +1,13 @@
 #include "Menu.h"
 #include <iostream>
+#include <SFML/Audio.hpp>
 MainMenu::MainMenu(const sf::Texture& bgTexture) : bgSprite(bgTexture){
 	bgSprite.setScale({ 1.5f, 1.5f });
 	bgSprite.setPosition({ 0.f, 120.f });
+	menuMusic.openFromFile("assets/sounds/menuMusic.mp3");
+	menuMusic.setLooping(true);
+	menuMusic.play();
+
 	if (!font.openFromFile("assets/font/castellarReg.ttf")) {
 		std::cerr << "Blad ladowania czcionki Castellar\n";
 	}
@@ -24,7 +29,10 @@ void MainMenu::draw(sf::RenderWindow& window) {
 }
 
 MenuState MainMenu::handleMouseClick(const sf::RenderWindow& window) {
-    if (playBtn->isClicked(window)) return MenuState::Play;
+	if (playBtn->isClicked(window)) {
+		menuMusic.stop();
+		return MenuState::Play;
+	} 
     if (infoBtn->isClicked(window)) return MenuState::Info;
     if (exitBtn->isClicked(window)) return MenuState::Exit;
 

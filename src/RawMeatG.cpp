@@ -26,3 +26,19 @@ void RawMeatG::applyEffect(Player* p) {
 	... just don't stop moving ...
 	*/
 }
+void RawMeatG::applyEffect(Enemy* e) {
+	static std::random_device rd;
+	static std::mt19937 gen(rd());
+	std::uniform_int_distribution<> dis(0, 1);
+	int drop = dis(gen);
+	if (drop == 0) {
+		e->hpUp(-20);
+		e->speedUp(-5);
+	}
+	else {
+		e->speedUp(12.5);
+		e->hpUp(2);
+		e->addBombAmount(2);
+		e->addBombRange(2, 2, 2, 2);
+	}
+}

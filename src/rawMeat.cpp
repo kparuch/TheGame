@@ -28,3 +28,20 @@ void RawMeat::applyEffect(Player* p) {
 	either you get pretty bad food poisoning and lose hp, get slower and gain a bomb, or you get a small hp boost, a speed boost and a bomb.
 	*/
 }
+void RawMeat::applyEffect(Enemy* e) {
+	static std::random_device rd;
+	static std::mt19937 gen(rd());
+	std::uniform_int_distribution<> dis(0, 5);
+
+	int drop = dis(gen);
+	if (drop < 2) {
+		e->speedUp(-0.35f);
+		e->takeDamage();
+
+	}
+	else {
+		e->hpUp(2);
+		e->speedUp(0.75f);
+		e->addBombAmount(1);
+	}
+}
