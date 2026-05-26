@@ -11,3 +11,7 @@ void TinFoil::applyEffect(Player* p) {
 
     //increases range, just like tinfoil
 }
+void TinFoil::applyEffect(Enemy* e) {
+	e->addBombRange(1, 1, 1, 1);
+    //same effect for enemy
+}

@@ -1,6 +1,6 @@
 #pragma once
 #include "Entity.h"
-//#include "Enemy.h
+#include "Enemy.h"
 #include <SFML/System/Clock.hpp>
 
 class Player;
@@ -25,4 +25,6 @@ public:
 	virtual void applyEffect(Player* p) = 0;
 	void burn();
 	void destroy();
+
+	virtual void applyEffect(Enemy* e) = 0;
 };

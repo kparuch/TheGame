@@ -45,8 +45,7 @@ private:
 	sf::Texture normTex;
 	sf::Clock hitAnimTimer;
 	const sf::SoundBuffer& bombSoundBuf;
-
-
+	
 public:
 	Player(float x, float y, const sf::Texture& texture, const sf::Texture& bombTexRef,const sf::Texture &explTexRef, const sf::Texture &curseTex, const sf::SoundBuffer& soundBuf);
 
@@ -65,4 +64,5 @@ public:
 	void setHp(int val);
 	void setAnimState(CursedState state);
 	void addBombRange(int newLeft, int newRight, int newUp, int newDwn);
+	sf::Vector2f getPosition() const { return sprite.getPosition(); }
 };

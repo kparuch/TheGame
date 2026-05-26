@@ -7,4 +7,5 @@ public:
 	RawMeatG(float x, float y, const sf::Texture& texture);
 
 	void applyEffect(Player* p) override;
+	void applyEffect(Enemy* e);
 };

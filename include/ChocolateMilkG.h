@@ -6,4 +6,5 @@ class ChocolateMilkG : public Pickup {
 public:
 	ChocolateMilkG(float x, float y, const sf::Texture& texture);
 	void applyEffect(Player* p);
+	void applyEffect(Enemy* e);
 };

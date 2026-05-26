@@ -8,3 +8,7 @@ void BombPickup::applyEffect(Player* p) {
 	// not even a little bit more or less, just one bomb, the most basic pickup in the game, 
 	// but still pretty useful if you ask me.
 }
+void BombPickup::applyEffect(Enemy* e) {
+	e->addBombAmount(1);
+	// same effect for enemy, increases bomb count by one
+}

@@ -9,3 +9,10 @@ void ChocolateMilk::applyEffect(Player* p) {
 
 	//simply increases each stat, 1up for everything.
 }
+void ChocolateMilk::applyEffect(Enemy* e) {
+	e->hpUp(1);
+	e->addBombAmount(1);
+	e->addBombRange(1, 1, 1, 1);
+	e->speedUp(1.f);
+	//same effect for enemy, increases each stat by one up
+}

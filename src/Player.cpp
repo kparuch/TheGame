@@ -6,6 +6,7 @@
 #include "Pickup.h"
 #include <iostream>
 #include <SFML/Audio.hpp>
+#include "Enemy.h"
 Player::Player(float x, float y, const sf::Texture& normtexture, const sf::Texture &bombTex, const sf::Texture &explTex, const sf::Texture &curse, const sf::SoundBuffer& soundBuf)
     :sprite(normtexture), currentState(PlayerState::Idle), bombTexRef(bombTex),explTexRef(explTex), curseTex(curse), bombSoundBuf(soundBuf)
 {
@@ -115,7 +116,7 @@ void Player::update( std::vector<std::unique_ptr<Entity>>& entities) {
     }
     
     else if (_hasDebuff) {
-        if (debuffTime.getElapsedTime().asSeconds() >= 5.0f) {
+        if (debuffTime.getElapsedTime().asSeconds() >= 6.0f) {
             _speed = _ogSpeed; 
             _hasDebuff = false;
             _hp = 1;
@@ -153,33 +154,39 @@ void Player::update( std::vector<std::unique_ptr<Entity>>& entities) {
 
    
     if (currentState != PlayerState::Dead) {
-    if (sf::Keyboard::isKeyPressed(sf::Keyboard::Key::W)) { movement.y -= _speed; isMoving = true; }
-    if (sf::Keyboard::isKeyPressed(sf::Keyboard::Key::S)) { movement.y += _speed; isMoving = true; }
-    if (sf::Keyboard::isKeyPressed(sf::Keyboard::Key::A)) { movement.x -= _speed; isMoving = true; }
-    if (sf::Keyboard::isKeyPressed(sf::Keyboard::Key::D)) { movement.x += _speed; isMoving = true; }
-    if (sf::Keyboard::isKeyPressed(sf::Keyboard::Key::P)) { takeDamage(); }
-    if (sf::Keyboard::isKeyPressed(sf::Keyboard::Key::Space) && !_isCursed) {
-        if (bombCooldown.getElapsedTime().asSeconds() > 0.5f)
-        {
-            int activeBombs{};
-            for (const auto& obj : entities) {
-                if (dynamic_cast<Bomb*>(obj.get())) {
-                    activeBombs++;
+        if (sf::Keyboard::isKeyPressed(sf::Keyboard::Key::W)) { movement.y -= _speed; isMoving = true; }
+        if (sf::Keyboard::isKeyPressed(sf::Keyboard::Key::S)) { movement.y += _speed; isMoving = true; }
+        if (sf::Keyboard::isKeyPressed(sf::Keyboard::Key::A)) { movement.x -= _speed; isMoving = true; }
+        if (sf::Keyboard::isKeyPressed(sf::Keyboard::Key::D)) { movement.x += _speed; isMoving = true; }
+        if (sf::Keyboard::isKeyPressed(sf::Keyboard::Key::P)) { takeDamage(); }
+		if (sf::Keyboard::isKeyPressed(sf::Keyboard::Key::C)) { activateCurse(); }
+        if (sf::Keyboard::isKeyPressed(sf::Keyboard::Key::Space) && !_isCursed) {
+            if (bombCooldown.getElapsedTime().asSeconds() > 0.40f)
+            {
+                int myActiveBombs = 0;
+                for (const auto& obj : entities) {
+                    if (Bomb* b = dynamic_cast<Bomb*>(obj.get())) {
+                        if (b->getOwner() == this) { 
+                            myActiveBombs++;
+                        }
+                    }
+                }
+
+               
+                if (myActiveBombs < _bombAmount) {
+                    float gridX = std::round(sprite.getPosition().x / 64.0f) * 64.0f;
+                    float gridY = std::round(sprite.getPosition().y / 64.0f) * 64.0f;
+                    currentState = PlayerState::PlacingBomb;
+                    actionTimer.restart();
+
+                    
+                    entities.push_back(std::make_unique<Bomb>(gridX, gridY, bombTexRef, explTexRef, _currentBombStats, bombSoundBuf, this));
+
+                    bombCooldown.restart();
                 }
             }
-            if (activeBombs < _bombAmount) {
-                float gridX = std::round(sprite.getPosition().x / 64.0f) * 64.0f;
-                float gridY = std::round(sprite.getPosition().y / 64.0f) * 64.0f;
-                currentState = PlayerState::PlacingBomb;
-                actionTimer.restart();
-                entities.push_back(std::make_unique<Bomb>(gridX, gridY, bombTexRef, explTexRef,  _currentBombStats, bombSoundBuf));
-                bombCooldown.restart();
-            }
-
-
         }
     }
-    }   
     
     if (currentState != PlayerState::Dead &&
         currentState != PlayerState::TakeDamage &&
@@ -208,6 +215,11 @@ void Player::update( std::vector<std::unique_ptr<Entity>>& entities) {
                     if (pickup->isDestroyed()) continue;
 
                     pickup->destroy();
+                    continue;
+                }
+				else if (Enemy* enemy = dynamic_cast<Enemy*>(obj.get())) {
+                    if (enemy->isDestroyed()) continue;
+                    enemy->takeDamage();
                     continue;
                 }
             }

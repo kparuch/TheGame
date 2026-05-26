@@ -9,3 +9,9 @@ void ChocolateMilkG::applyEffect(Player* p) {
 
 	//godtier version of chocolate milk,  huge speed boost, +2 bombs and hp, can kick bombs (not implemented yet)
 }
+void ChocolateMilkG::applyEffect(Enemy* e) {
+	e->hpUp(2);
+	e->addBombAmount(2);
+	e->speedUp(2.f);
+	//same effect for enemy, huge speed boost, +2 bombs and hp
+}

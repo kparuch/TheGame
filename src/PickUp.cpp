@@ -1,6 +1,6 @@
 #include "Pickup.h"
 #include "Player.h"
-
+#include "Enemy.h"
 Pickup::Pickup(float x, float y, const sf::Texture& texture)
     : isPickedUp(false), sprite(texture)
 {
@@ -28,6 +28,13 @@ void Pickup::update(std::vector<std::unique_ptr<Entity>>& entites) {
         if (Player* p = dynamic_cast<Player*>(obj.get())) {
             if (sprite.getGlobalBounds().findIntersection(p->getBounds())) {
                 applyEffect(p);
+                isPickedUp = true;
+                break;
+            }
+        }
+		if (Enemy* e = dynamic_cast<Enemy*>(obj.get())) {
+            if (sprite.getGlobalBounds().findIntersection(e->getBounds())) {
+                applyEffect(e);
                 isPickedUp = true;
                 break;
             }
