@@ -310,7 +310,7 @@ void Player::takeDamage(bool byPassGracePeriod) {
     }
 }
 void Player::addHp(int amount) {
-    _maxHp += amount;   // śledź max
+    _maxHp += amount;   
     _hp += amount;
     if (_hp < 1) _hp = 1;
 }
