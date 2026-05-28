@@ -46,6 +46,32 @@ void Bomb::updateAnimation() {
 }
 
 void Bomb::update(std::vector<std::unique_ptr<Entity>>& entities) {
+    if (_isKicked && !isExploded) {
+        sprite.move(_kickVelocity);
+
+        for (auto& obj : entities) {
+            if (obj.get() == this) continue;
+            if (!sprite.getGlobalBounds().findIntersection(obj->getBounds())) continue;
+
+            if (dynamic_cast<Wall*>(obj.get()) || dynamic_cast<Crate*>(obj.get())) {
+                sprite.move(-_kickVelocity);          // cofnij
+                float ts = 64.f;                       // snap do grida
+                float gx = std::round(sprite.getPosition().x / ts) * ts;
+                float gy = std::round(sprite.getPosition().y / ts) * ts;
+                sprite.setPosition({ gx, gy });
+                _kickVelocity = { 0.f, 0.f };
+                _isKicked = false;
+                break;
+            }
+            if (Bomb* other = dynamic_cast<Bomb*>(obj.get())) {
+                //if two bombs collide the kicked one will not move
+                sprite.move(-_kickVelocity);
+                _kickVelocity = { 0.f, 0.f };
+                _isKicked = false;
+                break;
+            }
+        }
+    }
     if (isExploded) return;
     if (isPassable) {
         bool isEntityIn = false;
@@ -104,10 +130,17 @@ void Bomb::update(std::vector<std::unique_ptr<Entity>>& entities) {
                             break;
                         }
                         if (dynamic_cast<Crate*>(obj.get())) {
+                            if (_isLaser) {
+                                spawnFire = true;
+                                stopFire = false;   // laser przebija przez skrzynki
+                            }
+                            else {
+                                
+                                stopFire = true;
+                                spawnFire = true;
+                            }
                             obj->destroy();
-                            stopFire = true;
-                            spawnFire = true; 
-                            break;
+                            break;  
                         }
                         if (Bomb* otherBomb = dynamic_cast<Bomb*>(obj.get())) {
                             otherBomb->triggerExplosion();
