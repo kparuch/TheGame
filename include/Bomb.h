@@ -30,6 +30,9 @@ private:
 	BombStats _stats;
 	const sf::SoundBuffer &explosionSound;
 	Entity* _owner; //essential 
+	sf::Vector2f _kickVelocity = { 0.f, 0.f };
+	bool _isKicked = false;
+	bool _isLaser = false;
 public:
 	Bomb(float x, float y, const sf::Texture& bombText, const sf::Texture &expText ,BombStats _stats, const sf::SoundBuffer & explosionSound, Entity* owner);
 	~Bomb() = default;
@@ -40,4 +43,9 @@ public:
 	void update(std::vector<std::unique_ptr<Entity>>& entities) override;
 	void triggerExplosion() { forceExplode = true; }
 	Entity* getOwner() const { return _owner; }
+	const BombStats& getStats() const { return _stats; }
+	void kick(sf::Vector2f dir) { _kickVelocity = dir; _isKicked = true; }
+	bool isBeingKicked() const { return _isKicked; }
+	void setLaser(bool v) { _isLaser = v; }
+	bool isLaser()  const { return _isLaser; }
 };

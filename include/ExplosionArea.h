@@ -10,7 +10,7 @@ private:
 	sf::Clock czas;
 	bool toBeErased;
 	sf::Sound sound;
-	bool isVisible;
+	bool _isVisible;
 	
 public:
 	ExplosionArea(float x, float y, const sf::Texture& texture, const sf::SoundBuffer &soundBuffer, bool playSound);
@@ -19,4 +19,5 @@ public:
 	sf::FloatRect getBounds() const override { return sprite.getGlobalBounds();}
 	bool isSolid()const override { return false; }
 	bool isDestroyed() const override { return toBeErased; }
+	bool isVisible()  { return _isVisible; }
 }; 

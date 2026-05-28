@@ -1,7 +1,7 @@
 #include "ExplosionArea.h"
 #include "Pickup.h"
 ExplosionArea::ExplosionArea(float x, float y, const sf::Texture& texture, const sf::SoundBuffer& soundBuff, bool playSound)
-    : sprite(texture), toBeErased(false), isVisible(true), sound(soundBuff)
+    : sprite(texture), toBeErased(false), _isVisible(true), sound(soundBuff)
 {
     sprite.setPosition({ x, y });
     sprite.setScale({ 0.25f, 0.25f });
@@ -12,9 +12,9 @@ ExplosionArea::ExplosionArea(float x, float y, const sf::Texture& texture, const
     }
 }
 void ExplosionArea::update(std::vector<std::unique_ptr<Entity>>&entities) {
-   if(isVisible) {
+   if(_isVisible) {
         if (czas.getElapsedTime().asSeconds() >= 0.6f) {
-			isVisible = false;
+			_isVisible = false;
             sprite.setColor(sf::Color(255, 255, 255, 0));
             sprite.setScale({ 0.f, 0.f });
         }
@@ -30,13 +30,13 @@ void ExplosionArea::update(std::vector<std::unique_ptr<Entity>>&entities) {
     }
    
    
-    if (!isVisible && sound.getStatus() == sf::Sound::Status::Stopped) {
+    if (!_isVisible && sound.getStatus() == sf::Sound::Status::Stopped) {
         toBeErased = true;
     }
 }
 
 void ExplosionArea::draw(sf::RenderWindow& window) {
-    if(isVisible){
+    if(_isVisible){
         window.draw(sprite);
     }
 };

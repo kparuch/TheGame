@@ -12,22 +12,23 @@ MainMenu::MainMenu(const sf::Texture& bgTexture, const sf::Texture& sheetTexture
     staticBg.setPosition({ 0.f, 0.f });
     menuMusic.openFromFile("assets/sounds/menuMusic.mp3");
     menuMusic.setLooping(true);
+	menuMusic.setVolume(18.5f);
     menuMusic.play();
   
-    sf::IntRect playDef({ 123, 67 }, { 279, 129 });   
-    sf::IntRect playHov({ 414, 67 }, { 279, 129 }); 
+    sf::IntRect playDef({ 125, 65 }, { 282, 130 });   
+    sf::IntRect playHov({ 419, 65 }, { 282, 130 }); 
    
-    sf::IntRect playAct({ 180 + 660, 67 }, { 276, 121 }); //will likely be depracted
+    sf::IntRect playAct({ 715, 65 }, { 282, 130 });  //will likely be depracted
 
     
-    sf::IntRect infoDef({ 123, 211 }, { 279, 129 });   
-    sf::IntRect infoHov({ 414, 211 }, { 279, 129 });
-    sf::IntRect infoAct({ 180 + 660, 187 }, { 310, 85 });  //will likely be depracted
+    sf::IntRect infoDef({ 125, 210 }, { 282, 130 });
+    sf::IntRect infoHov({ 419, 210 }, { 282, 130 });
+    sf::IntRect infoAct({ 715, 210 }, { 282, 130 });  //will likely be depracted
 
     
-    sf::IntRect exitDef({ 123, 355 }, { 279, 129 });
-    sf::IntRect exitHov({ 414, 355 }, { 279, 129 });
-	sf::IntRect exitAct({ 180 + 660, 400 }, { 310, 85 });  //will likely be depracted (as click animation is not planned, only hover)
+    sf::IntRect exitDef({ 125, 355 }, { 282, 130 });
+    sf::IntRect exitHov({ 419, 355 }, { 282, 130 });
+	sf::IntRect exitAct({ 715, 355 }, { 282, 130 });  //will likely be depracted (as click animation is not planned, only hover)
 
     float btnScale = 2.0f;
     float startX = 1175.f; 

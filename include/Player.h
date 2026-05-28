@@ -45,7 +45,15 @@ private:
 	sf::Texture normTex;
 	sf::Clock hitAnimTimer;
 	const sf::SoundBuffer& bombSoundBuf;
-	
+	bool canKickBombs;
+	bool hasLaserBombs;
+	bool canThrowBombs;
+	sf::Vector2f _facingDir = { 0.f, 1.f };
+	bool         _spaceWasDown = false;
+	sf::Clock    _lastSpaceTap;
+	int _maxHp = 3;
+	void placeBomb(std::vector<std::unique_ptr<Entity>>& entities);
+	void throwBomb(std::vector<std::unique_ptr<Entity>>& entities);
 public:
 	Player(float x, float y, const sf::Texture& texture, const sf::Texture& bombTexRef,const sf::Texture &explTexRef, const sf::Texture &curseTex, const sf::SoundBuffer& soundBuf);
 
@@ -65,4 +73,12 @@ public:
 	void setAnimState(CursedState state);
 	void addBombRange(int newLeft, int newRight, int newUp, int newDwn);
 	sf::Vector2f getPosition() const { return sprite.getPosition(); }
+	int getHp() const { return _hp; }
+	int  getMaxBombs()  const { return _bombAmount; }
+	int  getBombRange() const { return _currentBombStats.rangeUp; }
+	int  getMaxHp()     const { return _maxHp; }      
+	void setCanKick(bool v) { canKickBombs = v; }
+	void setHasLaser(bool v) { hasLaserBombs = v; }
+	void setCanThrow(bool v) { canThrowBombs = v; }
+
 };

@@ -36,7 +36,8 @@ void RawMeatG::applyEffect(Enemy* e) {
 		e->speedUp(-5);
 	}
 	else {
-		e->speedUp(12.5);
+
+		e->speedUp(6.5);
 		e->hpUp(2);
 		e->addBombAmount(2);
 		e->addBombRange(2, 2, 2, 2);

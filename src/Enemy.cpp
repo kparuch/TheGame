@@ -9,6 +9,8 @@
 #include <cmath>
 #include "ExplosionArea.h"
 
+
+
 struct GridPoint {
 	int x, y;
 	bool operator==(const GridPoint& other) const {
@@ -52,9 +54,14 @@ void Enemy::decideAction(const std::vector<std::unique_ptr<Entity>>& entities) {
 	float tileSize = 64.0f;
 	float distanceTiles = distance / tileSize;
 
-	if (distanceTiles <= 1.5f && bombCooldown.getElapsedTime().asSeconds() > 0.5f) {
+	bool canHit = canBombHitPlayer(targetPlayer->getPosition(), entities);
+	// Normal: 60% 
+	if (_difficulty == Difficulty::Normal) {
+		canHit = canHit && (rand() % 100 < 60);
+	}
+	if (canHit && bombCooldown.getElapsedTime().asSeconds() > 0.5f) {
 		currentEnemyState = EnemyState::PlacingBomb;
-		while (!path.empty())path.pop();
+		while (!path.empty()) path.pop();
 		updateAnimation();
 		return;
 	}
@@ -73,7 +80,17 @@ void Enemy::decideAction(const std::vector<std::unique_ptr<Entity>>& entities) {
 	if (currentEnemyState == EnemyState::Hunting) {
 		calculatePathToPlayer(targetPlayer->getPosition(), entities);
 		if (path.empty()) {
-			currentEnemyState = EnemyState::Idle;
+			
+			if (hasAdjacentCrate(entities)
+				&& bombCooldown.getElapsedTime().asSeconds() > 0.5f)
+			{
+				currentEnemyState = EnemyState::PlacingBomb;
+			}
+			else {
+			
+				currentEnemyState = EnemyState::Looting;
+				
+			}
 		}
 	}
 	else if (currentEnemyState == EnemyState::Looting) {
@@ -129,7 +146,7 @@ void Enemy::decideAction(const std::vector<std::unique_ptr<Entity>>& entities) {
 		}
 
 		
-		if (foundCrateToBomb && bombCooldown.getElapsedTime().asSeconds() > 3.0f) {
+		if (foundCrateToBomb && bombCooldown.getElapsedTime().asSeconds() > 0.5f) {
 			currentEnemyState = EnemyState::PlacingBomb;
 		}
 		else {
@@ -172,19 +189,59 @@ void Enemy::updateAnimation() {
 	case EnemyState::PlayerHit: col = 1; row = 1; break;
 	case EnemyState::TakeDamage: col = 0; row = 2; break;
 	case EnemyState::Dead: col = 1; row = 2; break;
+	case EnemyState::Fleeing: col = 0; row = 1; break;
 	}
 	sprite.setTextureRect(sf::IntRect({ col * frameWidth, row * frameHeight }, { frameWidth, frameHeight }));
 	};
 void Enemy::update(std::vector<std::unique_ptr<Entity>>& entities) {
 	if (toBeErased) return;
-	if (currentEnemyState != EnemyState::Dead && currentEnemyState != EnemyState::TakeDamage) {
+
+	
+	if (currentEnemyState != EnemyState::Dead
+		&& currentEnemyState != EnemyState::TakeDamage)
+	{
 		for (auto& obj : entities) {
 			if (dynamic_cast<ExplosionArea*>(obj.get())) {
 				if (sprite.getGlobalBounds().findIntersection(obj->getBounds())) {
-					takeDamage(); 
+					takeDamage();
 					break;
 				}
 			}
+		}
+	}
+	if (currentEnemyState != EnemyState::Dead
+		&& currentEnemyState != EnemyState::TakeDamage
+		&& currentEnemyState != EnemyState::PlacingBomb
+		&& currentEnemyState != EnemyState::Fleeing)
+	{
+		int gx = static_cast<int>(std::round(sprite.getPosition().x / 64.f));
+		int gy = static_cast<int>(std::round(sprite.getPosition().y / 64.f));
+
+		if (isTileDangerous(gx, gy, entities)) {
+			bool shouldFlee = false;
+
+			if (_difficulty == Difficulty::Hard) {
+				shouldFlee = true;  
+			}
+			else {
+				// normal diff, 65% chance for fleeing after 0.7s of being in danger
+				if (dangerTimer.getElapsedTime().asSeconds() > 0.7f) {
+					shouldFlee = (rand() % 100) < 65;
+				}
+			}
+
+			if (shouldFlee) {
+				auto safe = findSafePath(entities);
+				if (!safe.empty()) {
+					while (!path.empty()) path.pop();
+					for (const auto& p : safe) path.push(p);
+					currentEnemyState = EnemyState::Fleeing;
+					updateAnimation();
+				}
+			}
+		}
+		else {
+			dangerTimer.restart();  // reset if safe
 		}
 	}
 	float dt = 1.0f / 30.f;
@@ -196,104 +253,109 @@ void Enemy::update(std::vector<std::unique_ptr<Entity>>& entities) {
 			actionTimer.restart();
 		}
 		break;
-	case EnemyState::Moving:
+	case EnemyState::Looting:
+		currentEnemyState = EnemyState::Idle;
+		break;
+	case EnemyState::Hunting:
+		
+		if (!path.empty()) {
+			sf::Vector2f next = path.front();
+			int tx = static_cast<int>(std::round(next.x / 64.f));
+			int ty = static_cast<int>(std::round(next.y / 64.f));
+			if (isTileSolid(tx, ty, entities)) {
+				while (!path.empty()) path.pop();
+				decideAction(entities);
+				actionTimer.restart();
+				break;
+			}
+		}
 		followPath(dt);
 		if (actionTimer.getElapsedTime().asSeconds() > actionDurr) {
-			updateAnimation();
+			decideAction(entities);
 			actionTimer.restart();
 		}
 		break;
-		break;
-	case EnemyState::Looting:
-		break;
-	case EnemyState::Hunting:
+
+	case EnemyState::Moving:
+		if (!path.empty()) {
+			sf::Vector2f next = path.front();
+			int tx = static_cast<int>(std::round(next.x / 64.f));
+			int ty = static_cast<int>(std::round(next.y / 64.f));
+			if (isTileSolid(tx, ty, entities)) {
+				while (!path.empty()) path.pop();
+				decideAction(entities);
+				actionTimer.restart();
+				break;
+			}
+		}
 		followPath(dt);
 		if (actionTimer.getElapsedTime().asSeconds() > actionDurr) {
-			updateAnimation();
+			decideAction(entities);
 			actionTimer.restart();
 		}
 		break;
 	case EnemyState::PlacingBomb:
-		if (bombCooldown.getElapsedTime().asSeconds() > 0.40f)
-		{
+		if (bombCooldown.getElapsedTime().asSeconds() > 0.40f) {
 			int myActiveBombs = 0;
 			for (const auto& obj : entities) {
-				if (Bomb* b = dynamic_cast<Bomb*>(obj.get())) {
-					if (b->getOwner() == this) {
-						myActiveBombs++;
-					}
-				}
+				if (Bomb* b = dynamic_cast<Bomb*>(obj.get()))
+					if (b->getOwner() == this) myActiveBombs++;
 			}
 
 			if (myActiveBombs < _bombAmount) {
-				float gridX = std::round(sprite.getPosition().x / 64.0f) * 64.0f;
-				float gridY = std::round(sprite.getPosition().y / 64.0f) * 64.0f;
+				int gridX = static_cast<int>(std::round(sprite.getPosition().x / 64.f));
+				int gridY = static_cast<int>(std::round(sprite.getPosition().y / 64.f));
 
-				entities.push_back(std::make_unique<Bomb>(gridX, gridY, _bombTex, _expTex, _currentBombStats, bombSoundBuf, this));
+				
+				auto escape = findEscapePath(gridX, gridY, _currentBombStats, entities);
+
+				if (escape.empty()) {
+					
+					currentEnemyState = EnemyState::Idle;
+					updateAnimation();
+					break;
+				}
+
+				entities.push_back(std::make_unique<Bomb>(
+					gridX * 64.f, gridY * 64.f,
+					_bombTex, _expTex, _currentBombStats, bombSoundBuf, this));
 				bombCooldown.restart();
 
-				
-				GridPoint start = { static_cast<int>(gridX / 64.0f), static_cast<int>(gridY / 64.0f) };
-				std::queue<GridPoint> frontier;
-				std::map<GridPoint, GridPoint> cameFrom;
-				frontier.push(start);
-				cameFrom[start] = start;
+				while (!path.empty()) path.pop();
+				for (const auto& p : escape) path.push(p);
 
-				GridPoint dirs[4] = { {1, 0}, {-1, 0}, {0, 1}, {0, -1} };
-				GridPoint safeGoal = { -1, -1 };
+				currentEnemyState = EnemyState::Fleeing; 
+				actionTimer.restart();
+			}
+			else {
+				currentEnemyState = EnemyState::Idle;
+			}
+			updateAnimation();
+		}
+		break;
 
-				
-				while (!frontier.empty()) {
-					GridPoint curr = frontier.front();
-					frontier.pop();
-
-					
-					bool cornerSafe = (curr.x != start.x && curr.y != start.y);
-					bool distanceSafe = (std::abs(curr.x - start.x) > 3 || std::abs(curr.y - start.y) > 3);
-
-					if (cornerSafe || distanceSafe) {
-						safeGoal = curr;
-						break; 
-					}
-
-					for (auto& dir : dirs) {
-						GridPoint next = { curr.x + dir.x, curr.y + dir.y };
-
-						
-						if (cameFrom.find(next) == cameFrom.end() && !isTileSolid(next.x, next.y, entities)) {
-							frontier.push(next);
-							cameFrom[next] = curr;
-						}
-					}
-				}
-
-				
-				if (safeGoal.x != -1) {
-					std::vector<sf::Vector2f> escapePath;
-					GridPoint curr = safeGoal;
-					while (!(curr == start)) {
-						escapePath.push_back({ curr.x * 64.0f, curr.y * 64.0f });
-						curr = cameFrom[curr];
-					}
-					std::reverse(escapePath.begin(), escapePath.end());
-
-					for (const auto& p : escapePath) {
-						path.push(p);
-					}
-					currentEnemyState = EnemyState::Moving; 
-					actionTimer.restart();
-				}
-				else {
-					currentEnemyState = EnemyState::Idle; 
-				}
+	case EnemyState::Fleeing:
+		if (!path.empty()) {
+			sf::Vector2f next = path.front();
+			int tx = static_cast<int>(std::round(next.x / 64.f));
+			int ty = static_cast<int>(std::round(next.y / 64.f));
+			if (isTileSolid(tx, ty, entities)) {
+			
+				auto safe = findSafePath(entities);
+				while (!path.empty()) path.pop();
+				if (!safe.empty())
+					for (const auto& p : safe) path.push(p);
+				else
+					currentEnemyState = EnemyState::Idle;
+				updateAnimation();
+				break;
 			}
 		}
-
-		if (currentEnemyState != EnemyState::Moving) {
+		followPath(1.0f / 30.f);
+		if (path.empty()) {
 			currentEnemyState = EnemyState::Idle;
+			updateAnimation();
 		}
-
-		updateAnimation();
 		break;
 	case EnemyState::PlayerHit:
 		//tbi
@@ -325,6 +387,9 @@ void Enemy::followPath(float deltaTime) {
 	if (distance < movement	) {
 		sprite.setPosition(target);
 		path.pop();
+		if (path.empty()) {
+			actionTimer.restart();
+	}
 	}
 	else {
 		direction.x /= distance;
@@ -337,61 +402,74 @@ bool Enemy::isTileSolid(int gridX, int gridY, const std::vector<std::unique_ptr<
 	sf::FloatRect tileRect({ gridX * tileSize, gridY * tileSize }, { tileSize, tileSize });
 	for (const auto& obj : entities) {
 		if (obj.get() == this) continue;
-		if (!obj->isSolid()) continue;
 		if (dynamic_cast<Player*>(obj.get())) continue;
+		if (ExplosionArea* fire = dynamic_cast<ExplosionArea*>(obj.get())) {
+			
+			if (fire->isVisible() && tileRect.findIntersection(fire->getBounds())) {
+				return true;
+			}
+			continue; 
+		}
+		if (dynamic_cast<Bomb*>(obj.get())) {
+			if (tileRect.findIntersection(obj->getBounds())) {
+				return true;
+			}
+			continue;
+		}
+		if (!obj->isSolid()) continue;
+
 		if (tileRect.findIntersection(obj->getBounds())) {
 			return true;
 		}
 	}
+
 	return false;
 }
-void Enemy::calculatePathToPlayer(const sf::Vector2f& playerPos, const std::vector<std::unique_ptr<Entity>>& entities) {
+void Enemy::calculatePathToPlayer(const sf::Vector2f& playerPos,
+	const std::vector<std::unique_ptr<Entity>>& entities) {
 	while (!path.empty()) path.pop();
-	float tileSize = 64.0f;
+	constexpr float tileSize = 64.0f;
+	GridPoint start{ static_cast<int>(std::round(sprite.getPosition().x / tileSize)),
+					 static_cast<int>(std::round(sprite.getPosition().y / tileSize)) };
+	GridPoint goal{ static_cast<int>(std::round(playerPos.x / tileSize)),
+					 static_cast<int>(std::round(playerPos.y / tileSize)) };
 
-	GridPoint start{ static_cast<int>(sprite.getPosition().x / tileSize), static_cast<int>(sprite.getPosition().y / tileSize) };
-	GridPoint goal{ static_cast<int>(playerPos.x / tileSize), static_cast<int>(playerPos.y / tileSize) };
-	std::queue<GridPoint> frontier;
-	std::map<GridPoint, GridPoint> cameFrom;
-	frontier.push(start);
-	cameFrom[start] = start;
-	GridPoint dirs[4] = { {0, -1}, {0, 1}, {-1, 0}, {1, 0} }; //left, right , down, up
+	auto runBFS = [&](bool avoidDanger) -> std::vector<sf::Vector2f> {
+		std::queue<GridPoint> frontier;
+		std::map<GridPoint, GridPoint> cameFrom;
+		frontier.push(start);
+		cameFrom[start] = start;
+		GridPoint dirs[4] = { {0,-1},{0,1},{-1,0},{1,0} };
+		bool found = false;
 
-	bool found = false;
-
-	while (!frontier.empty()) {
-		GridPoint current = frontier.front();
-		frontier.pop();
-		if (current == goal) {
-			found = true;
-			break;
-		}
-		for (auto& dir : dirs) {
-			GridPoint next{ current.x + dir.x, current.y + dir.y };
-			if (cameFrom.find(next) == cameFrom.end() && !isTileSolid(next.x, next.y, entities)) {
+		while (!frontier.empty()) {
+			GridPoint curr = frontier.front();
+			frontier.pop();
+			if (curr == goal) { found = true; break; }
+			for (auto& d : dirs) {
+				GridPoint next{ curr.x + d.x, curr.y + d.y };
+				if (cameFrom.count(next)) continue;
+				if (isTileSolid(next.x, next.y, entities)) continue;
+				if (avoidDanger && !(next == goal) && isTileDangerous(next.x, next.y, entities))
+					continue;
 				frontier.push(next);
-				cameFrom[next] = current;
+				cameFrom[next] = curr;
 			}
 		}
-	}
-	if (found) {
-		std::vector<sf::Vector2f> reversePath;	
-		GridPoint current = goal;
-
-		while (!(current == start))
-		{
-			reversePath.push_back({ current.x * tileSize, current.y * tileSize });
-			current = cameFrom[current];
+		std::vector<sf::Vector2f> result;
+		if (!found) return result;
+		GridPoint c = goal;
+		while (!(c == start)) {
+			result.push_back({ c.x * tileSize, c.y * tileSize });
+			c = cameFrom[c];
 		}
-		std::reverse(reversePath.begin(), reversePath.end());
-		for (const auto& p : reversePath) {
-			path.push(p);
-		}
-	}
+		std::reverse(result.begin(), result.end());
+		return result;
+		};
 
-
-
-
+	auto result = runBFS(true);           // check safety
+	if (result.empty()) result = runBFS(false);  // then risk
+	for (const auto& p : result) path.push(p);
 }
 void Enemy::draw(sf::RenderWindow& window) {
 	window.draw(sprite);
@@ -443,13 +521,217 @@ void Enemy::addBombAmount(int newVal) {
 }
 void Enemy::hpUp(int newVal) {
 	_health += newVal;
-	if (_health > 1) {
+	if (_health < 1) {
 		_health = 1;
 	}
 }
 void Enemy::setHp(int newVal) {
 	_health = newVal;
-	if (_health < 1) {
-		_health = 1;
+	if (_health < 1) _health = 1;
+}
+bool Enemy::isTileDangerous(int gridX, int gridY,
+	const std::vector<std::unique_ptr<Entity>>& entities) const {
+	const float tileSize = 64.0f;
+
+	for (const auto& obj : entities) {
+		const Bomb* bomb = dynamic_cast<const Bomb*>(obj.get());
+		if (!bomb) continue;
+
+		sf::FloatRect bb = bomb->getBounds();
+		int bx = static_cast<int>(std::round((bb.position.x + bb.size.x / 2.f) / tileSize));
+		int by = static_cast<int>(std::round((bb.position.y + bb.size.y / 2.f) / tileSize));
+		const BombStats& s = bomb->getStats();
+
+		if (gridX == bx && gridY == by) return true;
+
+		if (gridX == bx) {
+			int dy = gridY - by;
+			if (dy < 0 && -dy <= s.rangeUp)    return true;
+			if (dy > 0 && dy <= s.rangeDown)  return true;
+		}
+		if (gridY == by) {
+			int dx = gridX - bx;
+			if (dx < 0 && -dx <= s.rangeLeft)  return true;
+			if (dx > 0 && dx <= s.rangeRight) return true;
+		}
 	}
+	return false;
+}
+
+std::vector<sf::Vector2f> Enemy::findEscapePath(
+	int bombX, int bombY,
+	const BombStats& stats,
+	const std::vector<std::unique_ptr<Entity>>& entities) const
+{
+	constexpr float tileSize = 64.0f;
+	GridPoint start{
+		static_cast<int>(std::round(sprite.getPosition().x / tileSize)),
+		static_cast<int>(std::round(sprite.getPosition().y / tileSize))
+	};
+
+	auto inNewBlast = [&](GridPoint p) {
+		if (p.x == bombX && p.y == bombY) return true;
+		if (p.x == bombX) {
+			int dy = p.y - bombY;
+			if (dy < 0 && -dy <= stats.rangeUp)   return true;
+			if (dy > 0 && dy <= stats.rangeDown) return true;
+		}
+		if (p.y == bombY) {
+			int dx = p.x - bombX;
+			if (dx < 0 && -dx <= stats.rangeLeft)  return true;
+			if (dx > 0 && dx <= stats.rangeRight) return true;
+		}
+		return false;
+		};
+
+	std::queue<GridPoint> frontier;
+	std::map<GridPoint, GridPoint> cameFrom;
+	std::map<GridPoint, int> depth;
+	frontier.push(start);
+	cameFrom[start] = start;
+	depth[start] = 0;
+
+	GridPoint dirs[4] = { {1,0}, {-1,0}, {0,1}, {0,-1} };
+	constexpr int MAX_DEPTH = 25;
+
+	while (!frontier.empty()) {
+		GridPoint curr = frontier.front();
+		frontier.pop();
+
+		if (!inNewBlast(curr) && !isTileDangerous(curr.x, curr.y, entities)) {
+			std::vector<sf::Vector2f> path;
+			GridPoint c = curr;
+			while (!(c == start)) {
+				path.push_back({ c.x * tileSize, c.y * tileSize });
+				c = cameFrom[c];
+			}
+			std::reverse(path.begin(), path.end());
+			return path;
+		}
+
+		if (depth[curr] >= MAX_DEPTH) continue;
+
+		for (auto& d : dirs) {
+			GridPoint next{ curr.x + d.x, curr.y + d.y };
+			if (cameFrom.count(next)) continue;
+			if (isTileSolid(next.x, next.y, entities)) continue;
+			frontier.push(next);
+			cameFrom[next] = curr;
+			depth[next] = depth[curr] + 1;
+		}
+	}
+	return {};
+}
+
+std::vector<sf::Vector2f> Enemy::findSafePath(
+	const std::vector<std::unique_ptr<Entity>>& entities) const
+{
+	constexpr float tileSize = 64.0f;
+	GridPoint start{
+		static_cast<int>(std::round(sprite.getPosition().x / tileSize)),
+		static_cast<int>(std::round(sprite.getPosition().y / tileSize))
+	};
+
+	std::queue<GridPoint> frontier;
+	std::map<GridPoint, GridPoint> cameFrom;
+	frontier.push(start);
+	cameFrom[start] = start;
+	GridPoint dirs[4] = { {1,0}, {-1,0}, {0,1}, {0,-1} };
+
+	while (!frontier.empty()) {
+		GridPoint curr = frontier.front();
+		frontier.pop();
+		if (!isTileDangerous(curr.x, curr.y, entities)) {
+			std::vector<sf::Vector2f> path;
+			GridPoint c = curr;
+			while (!(c == start)) {
+				path.push_back({ c.x * tileSize, c.y * tileSize });
+				c = cameFrom[c];
+			}
+			std::reverse(path.begin(), path.end());
+			return path;
+		}
+		for (auto& d : dirs) {
+			GridPoint next{ curr.x + d.x, curr.y + d.y };
+			if (cameFrom.count(next)) continue;
+			if (isTileSolid(next.x, next.y, entities)) continue;
+			frontier.push(next);
+			cameFrom[next] = curr;
+		}
+	}
+	return {};
+}
+bool Enemy::canBombHitPlayer(const sf::Vector2f& playerPos,
+	const std::vector<std::unique_ptr<Entity>>& entities) const {
+	const float tileSize = 64.0f;
+	int ex = static_cast<int>(std::round(sprite.getPosition().x / tileSize));
+	int ey = static_cast<int>(std::round(sprite.getPosition().y / tileSize));
+	int px = static_cast<int>(std::round(playerPos.x / tileSize));
+	int py = static_cast<int>(std::round(playerPos.y / tileSize));
+
+	if (ex != px && ey != py) return false;  
+
+	auto wallAt = [&](int gx, int gy) {
+		sf::FloatRect tile({ gx * tileSize, gy * tileSize }, { tileSize, tileSize });
+		for (const auto& obj : entities) {
+			if (!dynamic_cast<Wall*>(obj.get()) && !dynamic_cast<Crate*>(obj.get())) continue;
+			if (tile.findIntersection(obj->getBounds())) return true;
+		}
+		return false;
+		};
+
+	if (ex == px) {
+		int dy = py - ey;
+		int range = (dy < 0) ? _currentBombStats.rangeUp : _currentBombStats.rangeDown;
+		if (std::abs(dy) > range || std::abs(dy) == 0) return false;
+		int step = (dy > 0) ? 1 : -1;
+		for (int y = ey + step; y != py; y += step)
+			if (wallAt(ex, y)) return false;
+		return true;
+	}
+	int dx = px - ex;
+	int range = (dx < 0) ? _currentBombStats.rangeLeft : _currentBombStats.rangeRight;
+	if (std::abs(dx) > range || std::abs(dx) == 0) return false;
+	int step = (dx > 0) ? 1 : -1;
+	for (int x = ex + step; x != px; x += step)
+		if (wallAt(x, ey)) return false;
+	return true;
+}
+bool Enemy::hasAdjacentCrate(const std::vector<std::unique_ptr<Entity>>& entities) const {
+	constexpr float tileSize = 64.0f;
+	int ex = static_cast<int>(std::round(sprite.getPosition().x / tileSize));
+	int ey = static_cast<int>(std::round(sprite.getPosition().y / tileSize));
+	int dirs[4][2] = { {1,0},{-1,0},{0,1},{0,-1} };
+	for (auto& d : dirs) {
+		sf::FloatRect tile(
+			{ (ex + d[0]) * tileSize, (ey + d[1]) * tileSize },
+			{ tileSize, tileSize });
+		for (const auto& obj : entities) {
+			if (dynamic_cast<Crate*>(obj.get())
+				&& tile.findIntersection(obj->getBounds()))
+				return true;
+		}
+	}
+	return false;
+}
+void Enemy::setDifficulty(Difficulty d) {
+	_difficulty = d;
+	if (d == Difficulty::Normal) {
+		_speed = 3.5f;
+		actionDurr = 1.65f;   // takes more time to rhink and place bomb, giving player more time to react
+		_visionRange = 6.0f;
+		_currentBombStats = {1, 1, 1, 1};  // players range 
+	}
+	else {
+		_speed = 4.5f;
+		actionDurr = 0.65f;
+		_visionRange = 10.0f;
+		_currentBombStats = { 2, 2, 2, 2 };
+	}
+}
+void Enemy::takeCurseDamage() {
+	//grace period for curse mechanic to prevent instant death from multiple sources at once, as curse damage is unavoidable and can be applied by multiple sources in the same frame
+	if (_curseHitTimer.getElapsedTime().asSeconds() < 1.0f) return;
+	_curseHitTimer.restart();
+	takeDamage();
 }

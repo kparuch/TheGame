@@ -7,6 +7,7 @@
 #include <iostream>
 #include <SFML/Audio.hpp>
 #include "Enemy.h"
+#include "Wall.h"
 Player::Player(float x, float y, const sf::Texture& normtexture, const sf::Texture &bombTex, const sf::Texture &explTex, const sf::Texture &curse, const sf::SoundBuffer& soundBuf)
     :sprite(normtexture), currentState(PlayerState::Idle), bombTexRef(bombTex),explTexRef(explTex), curseTex(curse), bombSoundBuf(soundBuf)
 {
@@ -18,6 +19,7 @@ Player::Player(float x, float y, const sf::Texture& normtexture, const sf::Textu
     
     updateAnimation();
 }
+
 void Player::updateAnimation() {
     int col{};
     int row{};
@@ -41,6 +43,7 @@ void Player::activateCurse() {
     idleTimer.restart();
     lastPos = getBounds().position;
 }
+
 void Player::update( std::vector<std::unique_ptr<Entity>>& entities) {
     if (_isCursed) {
         
@@ -158,31 +161,20 @@ void Player::update( std::vector<std::unique_ptr<Entity>>& entities) {
         if (sf::Keyboard::isKeyPressed(sf::Keyboard::Key::S)) { movement.y += _speed; isMoving = true; }
         if (sf::Keyboard::isKeyPressed(sf::Keyboard::Key::A)) { movement.x -= _speed; isMoving = true; }
         if (sf::Keyboard::isKeyPressed(sf::Keyboard::Key::D)) { movement.x += _speed; isMoving = true; }
-        if (sf::Keyboard::isKeyPressed(sf::Keyboard::Key::P)) { takeDamage(); }
-		if (sf::Keyboard::isKeyPressed(sf::Keyboard::Key::C)) { activateCurse(); }
-        if (sf::Keyboard::isKeyPressed(sf::Keyboard::Key::Space) && !_isCursed) {
-            if (bombCooldown.getElapsedTime().asSeconds() > 0.40f)
-            {
-                int myActiveBombs = 0;
-                for (const auto& obj : entities) {
-                    if (Bomb* b = dynamic_cast<Bomb*>(obj.get())) {
-                        if (b->getOwner() == this) { 
-                            myActiveBombs++;
-                        }
-                    }
+        if (currentState != PlayerState::Dead && !_isCursed) {
+            bool spaceDown = sf::Keyboard::isKeyPressed(sf::Keyboard::Key::Space);
+            bool pressedNow = spaceDown && !_spaceWasDown;
+            _spaceWasDown = spaceDown;
+
+            if (pressedNow && bombCooldown.getElapsedTime().asSeconds() > 0.40f) {
+                bool doubleTap = (_lastSpaceTap.getElapsedTime().asSeconds() < 0.35f);
+                _lastSpaceTap.restart();
+
+                if (doubleTap && canThrowBombs) {
+                    throwBomb(entities);
                 }
-
-               
-                if (myActiveBombs < _bombAmount) {
-                    float gridX = std::round(sprite.getPosition().x / 64.0f) * 64.0f;
-                    float gridY = std::round(sprite.getPosition().y / 64.0f) * 64.0f;
-                    currentState = PlayerState::PlacingBomb;
-                    actionTimer.restart();
-
-                    
-                    entities.push_back(std::make_unique<Bomb>(gridX, gridY, bombTexRef, explTexRef, _currentBombStats, bombSoundBuf, this));
-
-                    bombCooldown.restart();
+                else {
+                    placeBomb(entities);
                 }
             }
         }
@@ -197,7 +189,6 @@ void Player::update( std::vector<std::unique_ptr<Entity>>& entities) {
     }
 
    
-    // --- RUCH W OSI X ---
     sprite.move({ movement.x, 0.f });
     for (auto& obj : entities) {
         if (obj.get() == this) continue;
@@ -207,22 +198,42 @@ void Player::update( std::vector<std::unique_ptr<Entity>>& entities) {
                 if (Crate* crate = dynamic_cast<Crate*>(obj.get())) {
                     if (crate->isDestroyed()) continue;
                     crate->destroy();
-
-
                     continue;
                 }
                 else if (Pickup* pickup = dynamic_cast<Pickup*>(obj.get())) {
                     if (pickup->isDestroyed()) continue;
-
                     pickup->destroy();
                     continue;
                 }
-				else if (Enemy* enemy = dynamic_cast<Enemy*>(obj.get())) {
+                else if (Enemy* enemy = dynamic_cast<Enemy*>(obj.get())) {
                     if (enemy->isDestroyed()) continue;
-                    enemy->takeDamage();
+                    enemy->takeCurseDamage();
                     continue;
                 }
             }
+            
+            else if (Enemy* enemy = dynamic_cast<Enemy*>(obj.get())) {
+                if (!enemy->isDestroyed()
+                    && currentState != PlayerState::TakeDamage
+                    && currentState != PlayerState::Dead)
+                {
+                    takeDamage(true);
+                }
+                continue; 
+            }
+            if (canKickBombs) {
+                if (Bomb* bomb = dynamic_cast<Bomb*>(obj.get())) {
+                    if (bomb->isSolid() && !bomb->isBeingKicked()) {
+                        sf::Vector2f dir = {
+                            movement.x != 0.f ? (movement.x > 0 ? 8.f : -8.f) : 0.f,
+                            movement.y != 0.f ? (movement.y > 0 ? 8.f : -8.f) : 0.f
+                        };
+                        bomb->kick(dir);
+                        continue;   
+                    }
+                }
+            }
+
             if (obj->isSolid()) {
                 sprite.move({ -movement.x, 0.f });
                 break;
@@ -240,17 +251,30 @@ void Player::update( std::vector<std::unique_ptr<Entity>>& entities) {
                 if (Crate* crate = dynamic_cast<Crate*>(obj.get())) {
                     if (crate->isDestroyed()) continue;
                     crate->destroy();
-                    
-
                     continue;
                 }
                 else if (Pickup* pickup = dynamic_cast<Pickup*>(obj.get())) {
                     if (pickup->isDestroyed()) continue;
-
                     pickup->destroy();
                     continue;
                 }
+                else if (Enemy* enemy = dynamic_cast<Enemy*>(obj.get())) {
+                    if (enemy->isDestroyed()) continue;
+                    enemy->takeCurseDamage();
+                    continue;
+                }
             }
+            
+            else if (Enemy* enemy = dynamic_cast<Enemy*>(obj.get())) {
+                if (!enemy->isDestroyed()
+                    && currentState != PlayerState::TakeDamage
+                    && currentState != PlayerState::Dead) //mechanic to consider
+                {
+                    takeDamage(true);
+                }
+                continue; 
+            }
+
             if (obj->isSolid()) {
                 sprite.move({ 0.f, -movement.y });
                 break;
@@ -260,6 +284,10 @@ void Player::update( std::vector<std::unique_ptr<Entity>>& entities) {
     if (!_isCursed) {
         updateAnimation();
     }
+    if (movement.x > 0.f) _facingDir = { 1.f,  0.f };
+    else if (movement.x < 0.f) _facingDir = { -1.f,  0.f };
+    if (movement.y > 0.f) _facingDir = { 0.f,  1.f };
+    else if (movement.y < 0.f) _facingDir = { 0.f, -1.f };
    
 }
 void Player::draw(sf::RenderWindow& window) {
@@ -282,10 +310,9 @@ void Player::takeDamage(bool byPassGracePeriod) {
     }
 }
 void Player::addHp(int amount) {
+    _maxHp += amount;   
     _hp += amount;
-    if (_hp < 1) {
-        _hp = 1;
-    }
+    if (_hp < 1) _hp = 1;
 }
 
 void Player::addBomb(int amount) {
@@ -332,4 +359,67 @@ void Player::addBombRange(int left, int right, int up, int down) {
     if (_currentBombStats.rangeDown  < 1) {
         _currentBombStats.rangeDown = 1;
     }
+}
+void Player::placeBomb(std::vector<std::unique_ptr<Entity>>& entities) {
+    int active = 0;
+    for (const auto& obj : entities)
+        if (Bomb* b = dynamic_cast<Bomb*>(obj.get()))
+            if (b->getOwner() == this) active++;
+    if (active >= _bombAmount) return;
+
+    float ts = 64.f;
+    float gx = std::round(sprite.getPosition().x / ts) * ts;
+    float gy = std::round(sprite.getPosition().y / ts) * ts;
+
+    auto bomb = std::make_unique<Bomb>(gx, gy, bombTexRef, explTexRef,
+        _currentBombStats, bombSoundBuf, this);
+    if (hasLaserBombs) bomb->setLaser(true);
+    entities.push_back(std::move(bomb));
+
+    currentState = PlayerState::PlacingBomb;
+    actionTimer.restart();
+    bombCooldown.restart();
+}
+
+void Player::throwBomb(std::vector<std::unique_ptr<Entity>>& entities) {
+    int active = 0;
+    for (const auto& obj : entities)
+        if (Bomb* b = dynamic_cast<Bomb*>(obj.get()))
+            if (b->getOwner() == this) active++;
+    if (active >= _bombAmount) return;
+
+    float ts = 64.f;
+    float baseX = std::round(sprite.getPosition().x / ts) * ts;
+    float baseY = std::round(sprite.getPosition().y / ts) * ts;
+
+    float landX = -1.f, landY = -1.f;
+
+    for (int i = 1; i <= 5; ++i) {
+        float cx = baseX + _facingDir.x * i * ts;
+        float cy = baseY + _facingDir.y * i * ts;
+        sf::FloatRect tile({ cx, cy }, { ts, ts });
+
+        bool wall = false, blocked = false, hasCrate = false;
+
+        for (const auto& obj : entities) {
+            if (!tile.findIntersection(obj->getBounds())) continue;
+            if (dynamic_cast<Wall*>(obj.get())) { wall = true; break; }
+            if (dynamic_cast<Bomb*>(obj.get())) { blocked = true; break; }
+            if (dynamic_cast<Crate*>(obj.get())) { hasCrate = true; }
+        }
+
+        if (wall || blocked) break;
+        if (!hasCrate) { landX = cx; landY = cy; }  
+    }
+
+    if (landX < 0.f) { placeBomb(entities); return; } 
+
+    auto bomb = std::make_unique<Bomb>(landX, landY, bombTexRef, explTexRef,
+        _currentBombStats, bombSoundBuf, this);
+    if (hasLaserBombs) bomb->setLaser(true);
+    entities.push_back(std::move(bomb));
+
+    currentState = PlayerState::PlacingBomb;
+    actionTimer.restart();
+    bombCooldown.restart();
 }
