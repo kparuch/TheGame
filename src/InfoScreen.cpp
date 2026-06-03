@@ -194,7 +194,7 @@ void InfoScreen::draw(sf::RenderWindow& window,
     drawText("[ TIPS ]", 230.f, tipsY, 28, header);
     drawText("-  Crates have a 30% chance to drop, so destroy everything you see.",
         230.f, tipsY + 42.f, 21, ink);
-    drawText("-  Enemies on HARD behave differently, so be cautious.",
+    drawText("-  Enemies on HARD and NIGHTMARE mode behave differently, so be cautious.",
         230.f, tipsY + 78.f, 21, ink);
     drawText("-  Your bombs will also damage you.",
         230.f, tipsY + 114.f, 21, red);
