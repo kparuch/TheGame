@@ -42,6 +42,9 @@ Game::Game(): gameOverText(mainFont, "GAME OVER", 120),deathSound(deathSoundBuf)
 	texHandler.load("menuBg", "assets/menuBgVer3.png");
 	texHandler.load("menuBtns", "assets/menuBtnsFixed.png");
 	texHandler.load("enemy", "assets/enemyVer2.png");
+	texHandler.load("pchlarz", "assets/pchlarz.png");
+	texHandler.load("pchlarz?", "assets/mythicalPchlarz.png");
+
 	mainFont.openFromFile("assets/font/castellarReg.ttf");
 
 	menuMusic.openFromFile("assets/sounds/menuMusic.mp3");
@@ -60,7 +63,7 @@ Game::Game(): gameOverText(mainFont, "GAME OVER", 120),deathSound(deathSoundBuf)
 	texHandler.load("bombUp", "assets/fixBombUp.png");
 	texHandler.load("???", "assets/errorUp.png");
 	mainMenu = std::make_unique<MainMenu>(texHandler.get("menuBg"), texHandler.get("menuBtns"));
-	infoScreen = std::make_unique<InfoScreen>(mainFont);
+	infoScreen = std::make_unique<InfoScreen>(mainFont	);
 	//essentials2
 	gameOverText.setFont(mainFont);
 	 
@@ -69,6 +72,22 @@ Game::Game(): gameOverText(mainFont, "GAME OVER", 120),deathSound(deathSoundBuf)
 	gameOverText.setOutlineThickness(5.f);
 	deathSoundBuf.loadFromFile("assets/sounds/death.mp3");
 	deathSound.setBuffer(deathSoundBuf);
+
+
+
+	infoIcons = {
+	{ "Tinfoil",    &texHandler.get("tinfoil")   },
+	{ "Raw Meat",       &texHandler.get("rawMeat")   },
+	{ "Chocolate Milk", &texHandler.get("chocoMilk") },
+	{ "Soy Milk",       &texHandler.get("soy")       },
+	{ "Pigeon",         &texHandler.get("pigeon")    },
+	{ "Bomb Up",        &texHandler.get("bombUp")    },
+	{ "Raw Meat ?",            &texHandler.get("rawMeatG")       },
+		{"???",              &texHandler.get("???")},
+	// "IAMERROR"
+	};
+
+
 
 	sf::FloatRect textRect = gameOverText.getLocalBounds();
 	gameOverText.setOrigin({
@@ -116,31 +135,30 @@ void Game::processEvent() {
 		if (event->is<sf::Event::Closed>()) {
 			window.close();
 		}
+
 		if (currentGameState == GameState::Info) {
+			infoScreen->handleEvent(*event);  // scroll
 			if (event->is<sf::Event::MouseButtonPressed>())
 				currentGameState = GameState::Menu;
-			continue;  
+			continue;
 		}
+
 		const auto* mousePressed = event->getIf<sf::Event::MouseButtonPressed>();
 		if (!mousePressed || mousePressed->button != sf::Mouse::Button::Left) continue;
 
 		sf::Vector2f mouse = window.mapPixelToCoords(sf::Mouse::getPosition(window));
 
-		// --- MENU ---
 		if (currentGameState == GameState::Menu) {
 			MenuState action = mainMenu->handleMouseClick(window);
 			if (action == MenuState::Play) currentGameState = GameState::LevelSelect;
-			else if (action == MenuState::Info) currentGameState = GameState::Info;
-
-			
-			else if (currentGameState == GameState::Info) {
-				currentGameState = GameState::Menu;
+			else if (action == MenuState::Info) {
+				infoScreen->resetScroll();  // once while leaving
+				currentGameState = GameState::Info;
 			}
 			else if (action == MenuState::Exit) window.close();
 			menuMusic.play();
 			menuMusic.setLooping(true);
 			menuMusic.setVolume(22.5f);
-
 		}
 
 
@@ -166,10 +184,12 @@ void Game::processEvent() {
 
 			// Difficulty toggle
 			const float diffY = 655.f;
-			if (sf::FloatRect({ 780.f, diffY }, { 180.f, 60.f }).contains(mouse))
+			if (sf::FloatRect({ 650.f, diffY }, { 180.f, 60.f }).contains(mouse))
 				_currentDifficulty = Difficulty::Normal;
-			if (sf::FloatRect({ 1000.f, diffY }, { 180.f, 60.f }).contains(mouse))
+			if (sf::FloatRect({ 870.f, diffY }, { 180.f, 60.f }).contains(mouse))
 				_currentDifficulty = Difficulty::Hard;
+			if (sf::FloatRect({ 1100.f, diffY }, { 180.f, 60.f }).contains(mouse))
+				_currentDifficulty = Difficulty::Nightmare;
 
 			// return to menu
 			if (sf::FloatRect({ 810.f, 860.f }, { 300.f, 60.f }).contains(mouse))
@@ -273,8 +293,8 @@ void Game::renderLevelSelect() {
 
 	// Difficulty toggle
 	const float diffY = 600.f;
-	const std::array<std::string, 2> diffLabels = { "NORMAL", "HARD" };
-	const std::array<Difficulty, 2> diffs = { Difficulty::Normal, Difficulty::Hard };
+	const std::array<std::string, 3> diffLabels = { "NORMAL", "HARD","NIGHTMARE"};
+	const std::array<Difficulty, 3> diffs = { Difficulty::Normal, Difficulty::Hard, Difficulty::Nightmare };
 
 	sf::Text diffTitle(mainFont, "DIFFICULTY:", 36);
 	sf::FloatRect dtr = diffTitle.getLocalBounds();
@@ -283,27 +303,10 @@ void Game::renderLevelSelect() {
 	diffTitle.setFillColor(sf::Color::White);
 	window.draw(diffTitle);
 
-	for (int i = 0; i < 2; ++i) {
-		float x = 780.f + i * 220.f;
+	for (int i = 0; i < 3; ++i) {
+		float x = 650.f + i * 220.f;
 		bool selected = (_currentDifficulty == diffs[i]);
-		if (i == 1)
-		{
-			sf::RectangleShape btn({ 180.f, 60.f });
-			btn.setPosition({ x, diffY + 55.f });
-			btn.setFillColor(selected ? sf::Color(136, 0, 21) : sf::Color(60, 60, 60));
-			btn.setOutlineColor(sf::Color::White);
-			btn.setOutlineThickness(2.f);
-			window.draw(btn);
-
-			sf::Text t(mainFont, diffLabels[i], 28);
-			t.setFillColor(sf::Color::White);
-			sf::FloatRect tr2 = t.getLocalBounds();
-			t.setOrigin({ tr2.position.x + tr2.size.x / 2.f, tr2.position.y + tr2.size.y / 2.f });
-			t.setPosition({ x + 90.f, diffY + 85.f });
-			window.draw(t);
-		}
-		else
-		
+		if (i == 0)
 		{
 			sf::RectangleShape btn({ 180.f, 60.f });
 			btn.setPosition({ x, diffY + 55.f });
@@ -312,13 +315,48 @@ void Game::renderLevelSelect() {
 			btn.setOutlineThickness(2.f);
 			window.draw(btn);
 
-			sf::Text t(mainFont, diffLabels[i], 28);
+			sf::Text t(mainFont, diffLabels[i], 24);
+			t.setFillColor(sf::Color::White);
+			sf::FloatRect tr2 = t.getLocalBounds();
+			t.setOrigin({ tr2.position.x + tr2.size.x / 2.f, tr2.position.y + tr2.size.y / 2.f });
+			t.setPosition({ x + 90.f, diffY + 85.f });
+			window.draw(t);
+		}
+		else if (i == 1)
+		
+		{
+			sf::RectangleShape btn({ 180.f, 60.f });
+			btn.setPosition({ x, diffY + 55.f });
+			
+			btn.setFillColor(selected ? sf::Color(136, 0, 21) : sf::Color(60, 60, 60));
+			btn.setOutlineColor(sf::Color::White);
+			btn.setOutlineThickness(2.f);
+			window.draw(btn);
+
+			sf::Text t(mainFont, diffLabels[i], 24);
 			t.setFillColor(sf::Color::White);
 			sf::FloatRect tr2 = t.getLocalBounds();
 			t.setOrigin({ tr2.position.x + tr2.size.x / 2.f, tr2.position.y + tr2.size.y / 2.f });
 			t.setPosition({ x + 90.f, diffY + 85.f });
 			window.draw(t);
 	}
+		else
+		
+		{
+			sf::RectangleShape btn({ 180.f, 60.f });
+			btn.setPosition({ x, diffY + 55.f });
+			btn.setFillColor(selected ? sf::Color(77, 0, 153) : sf::Color(60, 60, 60));
+			btn.setOutlineColor(sf::Color::White);
+			btn.setOutlineThickness(2.f);
+			window.draw(btn);
+
+			sf::Text t(mainFont, diffLabels[i], 24);
+			t.setFillColor(sf::Color::White);
+			sf::FloatRect tr2 = t.getLocalBounds();
+			t.setOrigin({ tr2.position.x + tr2.size.x / 2.f, tr2.position.y + tr2.size.y / 2.f });
+			t.setPosition({ x + 90.f, diffY + 85.f });
+			window.draw(t);
+		}
 
 	
 	}
@@ -354,7 +392,7 @@ void Game::render() {
 		mainMenu->draw(window);
 	}
 	else if (currentGameState == GameState::Info) {
-		infoScreen->draw(window);
+		infoScreen->draw(window, infoIcons);
 	}
 	else if (currentGameState == GameState::LevelSelect) {
 		renderLevelSelect();
@@ -412,6 +450,7 @@ void Game::update() {
 		if (mainMenu) mainMenu->update(window);
 		return;
 	}
+	if (currentGameState == GameState::Info) return;
 	if (currentGameState == GameState::LevelSelect) return;
 	for (uint16_t i = 0; i < gameObjs.size(); ++i) {
 		gameObjs[i]->update(gameObjs);
@@ -435,7 +474,7 @@ void Game::update() {
 				int roll = distrib(gen);
 				std::cout << "Rolled: " << roll << "\n"; 
 
-				if (roll >= 60) { 
+				if (roll >= 80) { 
 					float dropX = crate->getBounds().position.x;
 					float dropY = crate->getBounds().position.y;
 					auto newPickup = PickupFactory::spawnRandom(dropX + 2.f, dropY + 2.f, texHandler);
@@ -533,31 +572,39 @@ void Game::loadLevel(int levelIndex, Difficulty diff) {
 			},
 			// Level 3 - the true test of skill
 			{
-				"#################",
-				"#PXXXXXXXXXXXXXXX#",  
-				"# #X#X#X#X#X#X# #",
-				"#XXXXXXXXXXXXXXX#",
-				"#X#X#X#X#E#X#X#X#",
-				"#XXXXXXXXXXXXXXX#",
-				"#X#X#X#E#X#X#X#X#",
-				"#XXXXXXXXXXXXXXX#",
-				"# #X#X#X#X#X#X# #",
-				"#E XXXXXXXXXXX E#",
-				"#################",
+								"#################",
+"#P ##############",
+"# XXXXXXXXXXXXXX#",
+"## XX######X##XX#",
+"#XX##E     #XXXX#",
+"#X#XXXXXX #XXXXX#",
+"#XXXXXXXXXX#XXXX#",
+"#XXXXXXX#XXXXXXX#",
+"#XXXXXX#XXXXXXXX#",
+"#XXXXX#XXXXXXXXX#",
+"#XXXXXXXXXXXXXXX#",
+"#XXX##XXXXXXXXXX#",
+"#XXX##XXXXXXXXXX#",
+"#XXXXXXXXXXXXXXX#",
+"#################"
 			},
 			// Level 4 - 4/3?
 			{
 				"#################",
-				"#PXXXXXXXXXXXXXXX#",
-				"# #X#X#X#X#X#X# #",
-				"#XXXXXXXXXXXXXXX#",
-				"#X#X#X#X#E#X#X#X#",
-				"#XXXXXXXXXXXXXXX#",
-				"#X#X#X#E#X#X#X#X#",
-				"#XXXXXXXXXXXXXXX#",
-				"# #X#X#X#X#X#X# #",
-				"#E XXXXXXXXXXX E#",
-				"#################",
+"#P ##############",
+"# XXXXXXXXXXXXXX#",
+"## XX######X##XX#",
+"#XX##E     #XXXX#",
+"#X#XXXXXX #XXXXX#",
+"#XXXXXXXXXX#XXXX#",
+"#XXXXXXX#XXXXXXX#",
+"#XXXXXX#XXXXXXXX#",
+"#XXXXX#XXXXXXXXX#",
+"#XXXXXXXXXXXXXXX#",
+"#XXX##XXXXXXXXXX#",
+"#XXX##XXXXXXXXXX#",
+"#XXXXXXXXXXXXXXX#",
+"#################"
 			}
 		} };
 
@@ -579,9 +626,18 @@ void Game::loadLevel(int levelIndex, Difficulty diff) {
 					texHandler.get("explosion"), texHandler.get("cursedPlayer"),
 					explosionSound);
 				if (diff == Difficulty::Hard) {
+					player->setHp(2);
+					
 					player->setCanKick(true);
-					player->setHasLaser(true);
+					player->addBomb(1);
+				}
+				if (diff == Difficulty::Nightmare) {
+					player->setHp(1);
+					player->speedUp(1.2f);
+					player->setCanKick(true);
 					player->setCanThrow(true);
+					player->addBomb(2);
+					player->addBombRange(1,1,1,1);
 				}
 				gameObjs.push_back(std::move(player));
 			
@@ -666,7 +722,7 @@ void Game::renderHUD() {
 		bar.setFillColor(col);
 		window.draw(bar);
 
-		// Liczba
+		// Val
 		sf::Text num(mainFont, std::to_string(hp) + "/" + std::to_string(maxHp), 16);
 		num.setFillColor(sf::Color::White);
 		num.setPosition({ hudX + barW + 8.f, curY + 2.f });
@@ -686,18 +742,24 @@ void Game::renderHUD() {
 		if (Player* p = dynamic_cast<Player*>(obj.get())) {
 			drawHpBar("PLAYER HP", p->getHp(), p->getMaxHp(), sf::Color(50, 200, 80));
 
-			// Bomby
+			// Bombs
 			sf::Text bombInfo(mainFont, "BOMBS: " + std::to_string(p->getMaxBombs()), 20);
 			bombInfo.setFillColor(sf::Color::White);
 			bombInfo.setPosition({ hudX, curY });
 			window.draw(bombInfo);
 			curY += 30.f;
 
-			// Zasięg
+			// Range
 			sf::Text rangeInfo(mainFont, "RANGE: " + std::to_string(p->getBombRange()), 20);
 			rangeInfo.setFillColor(sf::Color(255, 180, 80));
 			rangeInfo.setPosition({ hudX, curY });
 			window.draw(rangeInfo);
+			curY += 44.f;
+
+			sf::Text dmgInfo(mainFont, "DMG: " + std::to_string(p->getBombDamage()), 20);
+			dmgInfo.setFillColor(sf::Color(255, 80, 80));
+			dmgInfo.setPosition({ hudX, curY });
+			window.draw(dmgInfo);
 			curY += 44.f;
 
 			break;
@@ -705,7 +767,7 @@ void Game::renderHUD() {
 	}
 
 	//line separator
-	sf::RectangleShape sep({ barW + 60.f, 2.f });
+	sf::RectangleShape sep({ barW + 64.f, 2.f });
 	sep.setPosition({ hudX, curY - 14.f });
 	sep.setFillColor(sf::Color(120, 120, 120));
 	window.draw(sep);
@@ -715,7 +777,7 @@ void Game::renderHUD() {
 	for (const auto& obj : gameObjs) {
 		if (Enemy* e = dynamic_cast<Enemy*>(obj.get())) {
 			drawHpBar("ENEMY " + std::to_string(idx++),
-				e->getHealth(), 3,
+				e->getHealth(), e->getMaxHealth(),
 				sf::Color(220, 60, 60));
 		}
 	}

@@ -54,8 +54,8 @@ void Bomb::update(std::vector<std::unique_ptr<Entity>>& entities) {
             if (!sprite.getGlobalBounds().findIntersection(obj->getBounds())) continue;
 
             if (dynamic_cast<Wall*>(obj.get()) || dynamic_cast<Crate*>(obj.get())) {
-                sprite.move(-_kickVelocity);          // cofnij
-                float ts = 64.f;                       // snap do grida
+                sprite.move(-_kickVelocity);          // 
+                float ts = 64.f;                       // snap to grid
                 float gx = std::round(sprite.getPosition().x / ts) * ts;
                 float gy = std::round(sprite.getPosition().y / ts) * ts;
                 sprite.setPosition({ gx, gy });
@@ -160,7 +160,7 @@ void Bomb::update(std::vector<std::unique_ptr<Entity>>& entities) {
         } 
         bool isFirstTile = true;
         for (const auto& pos : firePos) {
-            entities.push_back(std::make_unique<ExplosionArea>(pos.x, pos.y, explosionTexture, explosionSound, isFirstTile));
+            entities.push_back(std::make_unique<ExplosionArea>(pos.x, pos.y, explosionTexture, explosionSound, isFirstTile, _stats.damage));
             isFirstTile = false;
         }
     }

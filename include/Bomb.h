@@ -13,6 +13,7 @@ struct BombStats {
 	int rangeRight = 1;
 	int rangeUp = 1;
 	int rangeDown = 1;
+	int damage = 1;
 };
 class Bomb : public Entity {
 private:

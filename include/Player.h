@@ -45,9 +45,9 @@ private:
 	sf::Texture normTex;
 	sf::Clock hitAnimTimer;
 	const sf::SoundBuffer& bombSoundBuf;
-	bool canKickBombs;
-	bool hasLaserBombs;
-	bool canThrowBombs;
+	bool canKickBombs=false;
+	bool hasLaserBombs=false;
+	bool canThrowBombs=false;
 	sf::Vector2f _facingDir = { 0.f, 1.f };
 	bool         _spaceWasDown = false;
 	sf::Clock    _lastSpaceTap;
@@ -80,5 +80,7 @@ public:
 	void setCanKick(bool v) { canKickBombs = v; }
 	void setHasLaser(bool v) { hasLaserBombs = v; }
 	void setCanThrow(bool v) { canThrowBombs = v; }
+	void addBombDamage(int val);
+	int getBombDamage() const { return _currentBombStats.damage; }
 
 };

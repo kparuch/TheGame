@@ -1,7 +1,7 @@
 #include "ExplosionArea.h"
 #include "Pickup.h"
-ExplosionArea::ExplosionArea(float x, float y, const sf::Texture& texture, const sf::SoundBuffer& soundBuff, bool playSound)
-    : sprite(texture), toBeErased(false), _isVisible(true), sound(soundBuff)
+ExplosionArea::ExplosionArea(float x, float y, const sf::Texture& texture, const sf::SoundBuffer& soundBuff, bool playSound, int damage)
+	: sprite(texture), toBeErased(false), _isVisible(true), sound(soundBuff), _damage(damage)
 {
     sprite.setPosition({ x, y });
     sprite.setScale({ 0.25f, 0.25f });

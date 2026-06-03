@@ -36,7 +36,7 @@ void RawMeat::applyEffect(Enemy* e) {
 	int drop = dis(gen);
 	if (drop < 2) {
 		e->speedUp(-0.35f);
-		e->takeDamage();
+		e->takeDamage(1);
 
 	}
 	else {
