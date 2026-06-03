@@ -6,7 +6,7 @@ void ChocolateMilk::applyEffect(Player* p) {
 	p->addBomb(1);
 	p->addBombRange(1, 1, 1, 1);
 	p->speedUp(1.f);
-
+	p->setCanKick(true);
 	//simply increases each stat, 1up for everything.
 }
 void ChocolateMilk::applyEffect(Enemy* e) {
@@ -16,3 +16,10 @@ void ChocolateMilk::applyEffect(Enemy* e) {
 	e->speedUp(1.f);
 	//same effect for enemy, increases each stat by one up
 }
+
+
+/*
+possible fix : alter pick up depending on difficulty effect on enemy depending on diff level
+
+
+*/

@@ -31,9 +31,11 @@
     <ClCompile Include="src\ExplosionArea.cpp" />
     <ClCompile Include="src\Floor.cpp" />
     <ClCompile Include="src\Game.cpp" />
+    <ClCompile Include="src\Impossible.cpp" />
     <ClCompile Include="src\InfoScreen.cpp" />
     <ClCompile Include="src\main.cpp" />
     <ClCompile Include="src\Menu.cpp" />
+    <ClCompile Include="src\Pchlarz.cpp" />
     <ClCompile Include="src\PickUp.cpp" />
     <ClCompile Include="src\PickupFactory.cpp" />
     <ClCompile Include="src\Pigeon.cpp" />
@@ -57,8 +59,10 @@
     <ClInclude Include="include\ExplosionArea.h" />
     <ClInclude Include="include\Floor.h" />
     <ClInclude Include="include\Game.h" />
+    <ClInclude Include="include\Impossible.h" />
     <ClInclude Include="include\InfoScreen.h" />
     <ClInclude Include="include\Menu.h" />
+    <ClInclude Include="include\Pchlarz.h" />
     <ClInclude Include="include\Pickup.h" />
     <ClInclude Include="include\PickupFactory.h" />
     <ClInclude Include="include\Pigeon.h" />

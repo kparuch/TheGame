@@ -201,9 +201,9 @@ void Enemy::update(std::vector<std::unique_ptr<Entity>>& entities) {
 		&& currentEnemyState != EnemyState::TakeDamage)
 	{
 		for (auto& obj : entities) {
-			if (dynamic_cast<ExplosionArea*>(obj.get())) {
-				if (sprite.getGlobalBounds().findIntersection(obj->getBounds())) {
-					takeDamage();
+			if (ExplosionArea* fire = dynamic_cast<ExplosionArea*>(obj.get())) {
+				if (sprite.getGlobalBounds().findIntersection(fire->getBounds())) {
+					takeDamage(fire->getDamage());  // zamiast takeDamage()
 					break;
 				}
 			}
@@ -220,7 +220,7 @@ void Enemy::update(std::vector<std::unique_ptr<Entity>>& entities) {
 		if (isTileDangerous(gx, gy, entities)) {
 			bool shouldFlee = false;
 
-			if (_difficulty == Difficulty::Hard) {
+			if (_difficulty != Difficulty::Normal) {
 				shouldFlee = true;  
 			}
 			else {
@@ -425,22 +425,25 @@ bool Enemy::isTileSolid(int gridX, int gridY, const std::vector<std::unique_ptr<
 
 	return false;
 }
-void Enemy::calculatePathToPlayer(const sf::Vector2f& playerPos,
-	const std::vector<std::unique_ptr<Entity>>& entities) {
+/*
+uses BFS algorithm to find the path to player 
+*/
+void Enemy::calculatePathToPlayer(const sf::Vector2f& playerPos, 
+	const std::vector<std::unique_ptr<Entity>>& entities)  { // vector of entities
 	while (!path.empty()) path.pop();
 	constexpr float tileSize = 64.0f;
 	GridPoint start{ static_cast<int>(std::round(sprite.getPosition().x / tileSize)),
-					 static_cast<int>(std::round(sprite.getPosition().y / tileSize)) };
+					 static_cast<int>(std::round(sprite.getPosition().y / tileSize)) }; // since map is 2D we treat is a grid, it has both x and y paramters (whereas start is current entity pos and goal is its target pos
 	GridPoint goal{ static_cast<int>(std::round(playerPos.x / tileSize)),
 					 static_cast<int>(std::round(playerPos.y / tileSize)) };
 
-	auto runBFS = [&](bool avoidDanger) -> std::vector<sf::Vector2f> {
+	auto runBFS = [&](bool avoidDanger) -> std::vector<sf::Vector2f> { //BFS algorihtm, sents a frontier to check in each direction which path is the best to take 
 		std::queue<GridPoint> frontier;
 		std::map<GridPoint, GridPoint> cameFrom;
 		frontier.push(start);
 		cameFrom[start] = start;
 		GridPoint dirs[4] = { {0,-1},{0,1},{-1,0},{1,0} };
-		bool found = false;
+		bool found = false; //at the beginning of the check we assume the player is not yet found 
 
 		while (!frontier.empty()) {
 			GridPoint curr = frontier.front();
@@ -450,7 +453,7 @@ void Enemy::calculatePathToPlayer(const sf::Vector2f& playerPos,
 				GridPoint next{ curr.x + d.x, curr.y + d.y };
 				if (cameFrom.count(next)) continue;
 				if (isTileSolid(next.x, next.y, entities)) continue;
-				if (avoidDanger && !(next == goal) && isTileDangerous(next.x, next.y, entities))
+				if (avoidDanger && !(next == goal) && isTileDangerous(next.x, next.y, entities)) 
 					continue;
 				frontier.push(next);
 				cameFrom[next] = curr;
@@ -474,8 +477,8 @@ void Enemy::calculatePathToPlayer(const sf::Vector2f& playerPos,
 void Enemy::draw(sf::RenderWindow& window) {
 	window.draw(sprite);
 }
-void Enemy::takeDamage() {
-	_health--;
+void Enemy::takeDamage(int amount) {
+	_health -= amount;
 	if (_health <= 0) {
 		currentEnemyState = EnemyState::Dead;
 		toBeErased = true;
@@ -529,6 +532,8 @@ void Enemy::setHp(int newVal) {
 	_health = newVal;
 	if (_health < 1) _health = 1;
 }
+
+
 bool Enemy::isTileDangerous(int gridX, int gridY,
 	const std::vector<std::unique_ptr<Entity>>& entities) const {
 	const float tileSize = 64.0f;
@@ -557,6 +562,10 @@ bool Enemy::isTileDangerous(int gridX, int gridY,
 	}
 	return false;
 }
+/*
+1) if the entity is still in range of its own bomb or not -> if it is Tile is dangerous, if not Tile is not
+*/
+
 
 std::vector<sf::Vector2f> Enemy::findEscapePath(
 	int bombX, int bombY,
@@ -718,20 +727,37 @@ void Enemy::setDifficulty(Difficulty d) {
 	_difficulty = d;
 	if (d == Difficulty::Normal) {
 		_speed = 3.5f;
-		actionDurr = 1.65f;   // takes more time to rhink and place bomb, giving player more time to react
+		actionDurr = 1.65f;   // takes more time to think and place bomb, giving player more time to react
 		_visionRange = 6.0f;
-		_currentBombStats = {1, 1, 1, 1};  // players range 
+		_currentBombStats = { 1, 1, 1, 1 };  // players range 
 	}
-	else {
-		_speed = 4.5f;
+	else if (d == Difficulty::Hard) {
+		_speed = 5.5f;
 		actionDurr = 0.65f;
-		_visionRange = 10.0f;
+		_visionRange = 12.0f;
+		_health = 5;
+		_maxHealth = 5;
 		_currentBombStats = { 2, 2, 2, 2 };
+		_currentBombStats.damage = 2;
+	}
+	else if (d == Difficulty::Nightmare) { //to be implemented, secret option
+		_speed = 7.5f;
+		actionDurr = 0.35f;
+		_visionRange = 20.0f;
+		_health = 7;
+		_maxHealth = 7;
+		_currentBombStats = { 3, 3, 3, 3 };
+		_currentBombStats.damage = 3;
 	}
 }
 void Enemy::takeCurseDamage() {
 	//grace period for curse mechanic to prevent instant death from multiple sources at once, as curse damage is unavoidable and can be applied by multiple sources in the same frame
 	if (_curseHitTimer.getElapsedTime().asSeconds() < 1.0f) return;
 	_curseHitTimer.restart();
-	takeDamage();
+	takeDamage(2);
+}
+void Enemy::addBombDamage(int val) {
+	_currentBombStats.damage += val;
+	if (_currentBombStats.damage > 3) _currentBombStats.damage = 3;
+	if (_currentBombStats.damage < 1) _currentBombStats.damage = 1;
 }

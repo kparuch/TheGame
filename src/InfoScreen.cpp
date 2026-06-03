@@ -1,128 +1,263 @@
 #include "InfoScreen.h"
+#include <algorithm>
+#include <array>
+#include <cmath>
 
 InfoScreen::InfoScreen(sf::Font& font) : font(font) {}
 
-void InfoScreen::draw(sf::RenderWindow& window) {
+void InfoScreen::resetScroll() { scrollOffset = 0.f; }
 
-    window.clear(sf::Color(10, 8, 5));
-
-    sf::RectangleShape monitor({ 1820.f, 980.f });
-    monitor.setPosition({ 50.f, 50.f });
-    monitor.setFillColor(sf::Color(18, 15, 10));
-    monitor.setOutlineColor(sf::Color(60, 50, 30));
-    monitor.setOutlineThickness(4.f);
-    window.draw(monitor);
-
-    sf::RectangleShape paper({ 1700.f, 900.f });
-    paper.setPosition({ 110.f, 90.f });
-    paper.setFillColor(sf::Color(232, 220, 185));
-    window.draw(paper);
-
-    for (int i = 0; i < 28; ++i) {
-        sf::RectangleShape line({ 1700.f, 1.f });
-        line.setPosition({ 110.f, 122.f + i * 30.f });
-        line.setFillColor(sf::Color(180, 165, 130, 80));
-        window.draw(line);
+void InfoScreen::handleEvent(const sf::Event& event) {
+    if (const auto* w = event.getIf<sf::Event::MouseWheelScrolled>()) {
+        scrollOffset -= w->delta * SCROLL_SPEED;
+        scrollOffset = std::clamp(scrollOffset, 0.f, MAX_SCROLL);
     }
+}
 
-    sf::RectangleShape margin({ 2.f, 900.f });
-    margin.setPosition({ 210.f, 90.f });
-    margin.setFillColor(sf::Color(180, 60, 60, 160));
-    window.draw(margin);
+void InfoScreen::draw(sf::RenderWindow& window,
+    const std::unordered_map<std::string, const sf::Texture*>& icons)
+{
+    const sf::Vector2f wSize(window.getSize());
 
-    // --- helpers ---
-    auto drawLine = [&](float x, float y, float w, sf::Color col) {
+    // ── kolory ──────────────────────────────────────────────────────────────
+    const sf::Color ink(35, 20, 5);
+    const sf::Color header(90, 45, 10);
+    const sf::Color faded(110, 90, 60);
+    const sf::Color red(160, 30, 30);
+    const sf::Color purple(100, 0, 130);
+    const sf::Color sepCol(140, 110, 60, 150);
+
+    // ── pomocniki (działają w aktywnym view) ────────────────────────────────
+    auto drawRect = [&](float x, float y, float w, float h, sf::Color fill,
+        sf::Color outline = sf::Color::Transparent, float thick = 0.f) {
+            sf::RectangleShape r({ w, h });
+            r.setPosition({ x, y });
+            r.setFillColor(fill);
+            if (thick > 0.f) { r.setOutlineColor(outline); r.setOutlineThickness(thick); }
+            window.draw(r);
+        };
+
+    auto drawLine = [&](float x, float y, float w, sf::Color c) {
         sf::RectangleShape l({ w, 1.f });
         l.setPosition({ x, y });
-        l.setFillColor(col);
+        l.setFillColor(c);
         window.draw(l);
         };
 
-    auto drawText = [&](const std::string& str, float x, float y,
-        unsigned size, sf::Color col) {
-            sf::Text t(font, str, size);
-            t.setFillColor(col);
+    auto drawText = [&](const std::string& s, float x, float y,
+        unsigned sz, sf::Color c) {
+            sf::Text t(font, s, sz);
+            t.setFillColor(c);
             t.setPosition({ x, y });
             window.draw(t);
         };
 
-    auto drawTextCentered = [&](const std::string& str, float y,
-        unsigned size, sf::Color col) {
-            sf::Text t(font, str, size);
-            t.setFillColor(col);
+    auto drawTextCentered = [&](const std::string& s, float y,
+        unsigned sz, sf::Color c) {
+            sf::Text t(font, s, sz);
+            t.setFillColor(c);
             sf::FloatRect r = t.getLocalBounds();
             t.setOrigin({ r.position.x + r.size.x / 2.f, 0.f });
             t.setPosition({ 960.f, y });
             window.draw(t);
         };
 
-    const sf::Color ink(35, 20, 5);
-    const sf::Color header(90, 45, 10);
-    const sf::Color faded(110, 90, 60);
-    const sf::Color red(160, 30, 30);
-    const sf::Color purple(100, 0, 130);
+    // Rysuje ikonę pickupu (lub placeholder) w zadanej pozycji.
+    auto drawIcon = [&](const std::string& name, float x, float y) {
+        auto it = icons.find(name);
+        if (it != icons.end() && it->second) {
+            sf::Sprite sp(*it->second);
+            // wytnij pierwszą klatkę — zakładam że spritesheet jest poziomy (4 klatki w rzędzie)
+            auto ts = it->second->getSize();
+            unsigned frameW = ts.x / 2;   // szerokość jednej klatki
+            unsigned frameH = ts.y / 2;        // pełna wysokość
+            sp.setTextureRect(sf::IntRect({ 0, 0 }, { (int)frameW, (int)frameH }));
 
-    
-    sf::Text title(font, "SOYMAN II: THE WAY OF THE BOMB", 48);
-    title.setFillColor(sf::Color(40, 25, 10));
-    title.setOutlineColor(sf::Color(180, 150, 90));
-    title.setOutlineThickness(1.f);
-    sf::FloatRect tr = title.getLocalBounds();
-    title.setOrigin({ tr.position.x + tr.size.x / 2.f, 0.f });
-    title.setPosition({ 960.f, 100.f });
-    window.draw(title);
-    drawLine(260.f, 165.f, 1400.f, sf::Color(100, 70, 30));
+            // skaluj do ICON_SIZE bazując na pojedynczej klatce
+            float sc = ICON_SIZE / static_cast<float>(std::max(frameW, frameH));
+            sp.setScale({ sc, sc });
+            sp.setPosition({ x, y });
+            window.draw(sp);
+        }
+        else {
+            // placeholder — szare pole z "?"
+            drawRect(x, y, ICON_SIZE, ICON_SIZE,
+                sf::Color(55, 45, 28),
+                sf::Color(110, 88, 52), 1.f);
+            sf::Text q(font, "?", 20);
+            q.setFillColor(sf::Color(140, 120, 80));
+            sf::FloatRect qr = q.getLocalBounds();
+            q.setOrigin({ qr.position.x + qr.size.x / 2.f,
+                          qr.position.y + qr.size.y / 2.f });
+            q.setPosition({ x + ICON_SIZE / 2.f, y + ICON_SIZE / 2.f });
+            window.draw(q);
+        }
+        };
 
-    // --- LORE ---
-    drawText("[ LORE ]", 230.f, 180.f, 28, header);
-    drawText("The Silent one, listen to me, truly I tell you, the great danger is ahead ", 230.f, 218.f, 21, ink);
-    drawText("I am pretty sure, that basics are known to you, I hope you still remember the training of yours", 230.f, 248.f, 21, ink);
-    drawText("WASD, the movement is classic, bomg gives you SPACE, the things you will find down there, have different variations...", 230.f, 278.f, 21, ink);
-    drawText("Beware, if you perish, so will the world around you, the environment here is cursed...", 230.f, 308.f, 21, red);
-    drawLine(230.f, 345.f, 1400.f, sf::Color(140, 110, 60, 150));
+    // ════════════════════════════════════════════════════════════════════════
+    // WARSTWA 1 — tło (default view)
+    // ════════════════════════════════════════════════════════════════════════
+    window.clear(sf::Color(10, 8, 5));
 
-    // --- PICKUPY ---
-    drawText("[ PICKUPS ]", 230.f, 325.f, 28, header);
+    // monitor
+    drawRect(50.f, 50.f, 1820.f, 980.f,
+        sf::Color(18, 15, 10), sf::Color(60, 50, 30), 4.f);
+    // papier
+    drawRect(110.f, 90.f, 1700.f, 900.f, sf::Color(232, 220, 185));
+    // linie pomocnicze
+    for (int i = 0; i < 30; ++i)
+        drawRect(110.f, 122.f + i * 30.f, 1700.f, 1.f, sf::Color(180, 165, 130, 80));
+    // margines
+    drawRect(210.f, 90.f, 2.f, 900.f, sf::Color(180, 60, 60, 160));
 
-    struct PickupInfo { std::string name, desc; sf::Color col; };
+    // ── tytuł (stały, nie scrolluje się) ────────────────────────────────────
+    {
+        sf::Text title(font, "SOYMAN II: THE WAY OF THE BOMB", 48);
+        title.setFillColor(sf::Color(40, 25, 10));
+        title.setOutlineColor(sf::Color(180, 150, 90));
+        title.setOutlineThickness(1.f);
+        sf::FloatRect tr = title.getLocalBounds();
+        title.setOrigin({ tr.position.x + tr.size.x / 2.f, 0.f });
+        title.setPosition({ 960.f, 100.f });
+        window.draw(title);
+    }
+    drawLine(260.f, 168.f, 1400.f, sf::Color(100, 70, 30));
+
+    // ════════════════════════════════════════════════════════════════════════
+    // WARSTWA 2 — scrollowalna treść
+    //
+    // Viewport na ekranie: x=[110, 1810], y=[172, 940]
+    // sf::View clipuje automatycznie — nic nie wychodzi poza ten prostokąt.
+    // ════════════════════════════════════════════════════════════════════════
+    constexpr float VP_LEFT = 110.f;
+    constexpr float VP_TOP = 172.f;
+    constexpr float VP_W = 1700.f;
+    constexpr float VP_H = 768.f;   // 940 - 172
+
+    sf::View scrollView;
+    scrollView.setViewport(sf::FloatRect(
+        { VP_LEFT / wSize.x,  VP_TOP / wSize.y },
+        { VP_W / wSize.x,  VP_H / wSize.y }
+    ));
+    // Środek view przesuwa się o scrollOffset → efekt scrollowania.
+    scrollView.setSize({ VP_W, VP_H });
+    scrollView.setCenter({ VP_LEFT + VP_W / 2.f,
+                           VP_TOP + VP_H / 2.f + scrollOffset });
+    window.setView(scrollView);
+
+    // ── LORE ────────────────────────────────────────────────────────────────
+    drawText("[ LORE ]", 270.f, 182.f, 28, header);
+    drawText("The Silent one, listen to me, truly I tell you, the great danger is ahead",
+        230.f, 222.f, 21, ink);
+    drawText("I am pretty sure, that basics are known to you, I hope you still remember the training of yours",
+        230.f, 252.f, 21, ink);
+    drawText("WASD, the movement is classic, bomg gives you SPACE, the things you will find down there, have different variations...",
+        230.f, 282.f, 21, ink);
+    drawText("Beware, if you perish, so will the world around you, the environment here is cursed...",
+        230.f, 312.f, 21, red);
+    drawLine(230.f, 352.f, 1400.f, sepCol);
+
+    // ── PICKUPS ─────────────────────────────────────────────────────────────
+    drawText("[ PICKUPS ]", 230.f, 362.f, 28, header);
+
+    struct PickupInfo { std::string name, desc; sf::Color nameCol; };
     const std::array<PickupInfo, 8> pickups = { {
-        { "Tinfoil Cap",    "Signal booster, increases the range",               ink   },
-        { "Raw Meat",       "Can be a live saver, may increase HP by 2",       ink   },
-        { "Chocolate Milk", "ALWAYS PICK THIS UP SILENT ONE",     faded },
-        { "Soy Milk",       "silent one, i do hope your love for this drink is long gone",      ink   },
-        { "Pigeon",         "A noteworthy companion, he will train you, you will be faster",                ink   },
-        { "Bomb Up",        "As the name suggests...",                       ink   },
-        { "???",            "[REDACTED]",         red   },
-        { "IAMERROR",            "These are not all the pick ups, other ones have been lost for ages..",         purple   },
+        { "Tinfoil",    "Signal booster  increases the range",                          ink    },
+        { "Raw Meat",       "Can be a life saver, may increase HP by 2",                     ink    },
+        { "Chocolate Milk", "ALWAYS PICK THIS UP SILENT ONE",                                faded  },
+        { "Soy Milk",       "silent one, i do hope your love for this drink is long gone",   ink    },
+        { "Pigeon",         "A noteworthy companion, ",                   ink    },
+        { "Bomb Up",        "As the name suggests...",                                       ink    },
+        { "Raw Meat ?",            "if you stop, you perish..., 1 ...",                                                    red    },
+        { "???",       "shrouded in mystery, its function: De.DOS_ERROR",      purple },
     } };
 
+    constexpr float ROW_H = 70.f;   // wysokość wiersza z ikoną
+    constexpr float PU_START = 408.f;
+
     for (int i = 0; i < (int)pickups.size(); ++i) {
-        float py = 365.f + i * 38.f;
-        sf::CircleShape bullet(5.f);
-        bullet.setFillColor(sf::Color(100, 70, 30));
-        bullet.setPosition({ 240.f, py + 7.f });
-        window.draw(bullet);
-        drawText(pickups[i].name + ": " + pickups[i].desc, 260.f, py, 21, pickups[i].col);
+        const float py = PU_START + i * ROW_H;
+
+        // ikona wyśrodkowana pionowo w wierszu
+        drawIcon(pickups[i].name, 240.f, py + (ROW_H - ICON_SIZE) / 2.f);
+
+        // nazwa pickupu
+        {
+            sf::Text nt(font, pickups[i].name, 21);
+            nt.setFillColor(pickups[i].nameCol);
+            nt.setPosition({ 320.f, py + 4.f });
+            window.draw(nt);
+        }
+        // opis (mniejszy, pod nazwą)
+        drawText(pickups[i].desc, 320.f, py + 27.f, 18, faded);
     }
-    drawLine(230.f, 640.f, 1400.f, sf::Color(140, 110, 60, 150));
 
-    // --- TIPS ---
-    drawText("[ TIPS ]", 230.f, 650.f, 28, header);
-    drawText("-  Crates have a 30% chance to drop, so destroy everything you see.", 230.f, 690.f, 21, ink);
-    drawText("-  Enemies on HARD behave differently, so be cautious.", 230.f, 725.f, 21, ink);
-    drawText("-  Your bombs will also damage you", 230.f, 760.f, 21, red);
+    // obliczamy gdzie kończy się sekcja pickupów
+    const float afterPU = PU_START + (int)pickups.size() * ROW_H + 10.f;
+    drawLine(230.f, afterPU, 1400.f, sepCol);
 
-    sf::RectangleShape secretBox({ 1400.f, 88.f });
-    secretBox.setPosition({ 228.f, 798.f });
-    secretBox.setFillColor(sf::Color(60, 0, 80, 60));
-    secretBox.setOutlineColor(sf::Color(150, 0, 200, 120));
-    secretBox.setOutlineThickness(1.f);
-    window.draw(secretBox);
-    drawText("?  Apparently, there are four levels, yet you will only see 3, the level you seek will not be found here",
-        238.f, 808.f, 21, purple);
-	drawText("?  More pickups are yet to be found...", 238.f, 838.f, 21, purple);
+    // ── TIPS ────────────────────────────────────────────────────────────────
+    const float tipsY = afterPU + 14.f;
+    drawText("[ TIPS ]", 230.f, tipsY, 28, header);
+    drawText("-  Crates have a 30% chance to drop, so destroy everything you see.",
+        230.f, tipsY + 42.f, 21, ink);
+    drawText("-  Enemies on HARD behave differently, so be cautious.",
+        230.f, tipsY + 78.f, 21, ink);
+    drawText("-  Your bombs will also damage you.",
+        230.f, tipsY + 114.f, 21, red);
 
-    // --- FOOTER ---
+    // ── sekretne pole ────────────────────────────────────────────────────────
+    const float secretY = tipsY + 158.f;
+    drawRect(228.f, secretY, 1400.f, 92.f,
+        sf::Color(60, 0, 80, 60),
+        sf::Color(150, 0, 200, 120), 1.f);
+    drawText("?  Apparently, there are four levels, yet you will ever only see 3, as the level you seek is not here",
+        238.f, secretY + 12.f, 21, purple);
+    drawText("?  As it was foretold, four pickups were made to alter the game, you will only see here two...",
+        238.f, secretY + 44.f, 21, purple);
+
+    // ════════════════════════════════════════════════════════════════════════
+    // WARSTWA 3 — powrót do default view: scrollbar + stopka
+    // ════════════════════════════════════════════════════════════════════════
+    window.setView(window.getDefaultView());
+
+    // ── scrollbar ────────────────────────────────────────────────────────────
+    // Rysujemy tylko gdy content wykracza poza viewport
+    if (MAX_SCROLL > 0.f) {
+        constexpr float SB_X = 1806.f;
+        constexpr float SB_TOP = VP_TOP;
+        constexpr float SB_H = VP_H;
+
+        drawRect(SB_X, SB_TOP, 5.f, SB_H, sf::Color(140, 120, 80, 55));
+
+        const float thumbH = SB_H * (SB_H / (SB_H + MAX_SCROLL));
+        const float thumbY = SB_TOP + (scrollOffset / MAX_SCROLL) * (SB_H - thumbH);
+        drawRect(SB_X, thumbY, 5.f, thumbH, sf::Color(130, 100, 50, 190));
+    }
+
+    // ── przykryj krawędź papieru pod tytułem (żeby treść nie wchodziła w tytuł) ──
+    // Viewport view już clipuje od VP_TOP=172, więc to tylko kosmetyka —
+    // zakrywamy linię papieru między y=90 a y=172.
+    drawRect(110.f, 90.f, 1700.f, VP_TOP - 90.f, sf::Color(232, 220, 185));
+
+    // ── ponownie tytuł + linia nad scrollem (zawsze na wierzchu) ─────────────
+    {
+        sf::Text title(font, "SOYMAN II: THE WAY OF THE BOMB", 48);
+        title.setFillColor(sf::Color(40, 25, 10));
+        title.setOutlineColor(sf::Color(180, 150, 90));
+        title.setOutlineThickness(1.f);
+        sf::FloatRect tr = title.getLocalBounds();
+        title.setOrigin({ tr.position.x + tr.size.x / 2.f, 0.f });
+        title.setPosition({ 960.f, 100.f });
+        window.draw(title);
+    }
+    drawLine(260.f, 168.f, 1400.f, sf::Color(100, 70, 30));
+
+    // ── przykryj dolną krawędź papieru (żeby treść nie leciała pod stopkę) ──
+    drawRect(110.f, 940.f, 1700.f, 50.f, sf::Color(232, 220, 185));
+
+    // ── stopka ───────────────────────────────────────────────────────────────
     drawLine(110.f, 940.f, 1700.f, sf::Color(100, 70, 30));
-    drawTextCentered("click anywhere to return to main menu...", 952.f, 20, faded);
+    drawTextCentered("scroll with mouse wheel click anywhere to return to main menu",
+        952.f, 20, faded);
 }

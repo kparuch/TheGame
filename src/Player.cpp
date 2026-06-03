@@ -64,7 +64,7 @@ void Player::update( std::vector<std::unique_ptr<Entity>>& entities) {
         }
 
         
-        if (curseTime.getElapsedTime().asSeconds() >= 10.0f) {
+        if (curseTime.getElapsedTime().asSeconds() >= 7.5f) {
             _isCursed = false;
             _hasDebuff = true;
             _speed = 1.5f;
@@ -77,7 +77,7 @@ void Player::update( std::vector<std::unique_ptr<Entity>>& entities) {
         
         sprite.setTexture(curseTex);
 
-        if (curseTime.getElapsedTime().asSeconds() >= 5.0f) {
+        if (curseTime.getElapsedTime().asSeconds() >= 4.f) {
             ;
       
 
@@ -166,15 +166,15 @@ void Player::update( std::vector<std::unique_ptr<Entity>>& entities) {
             bool pressedNow = spaceDown && !_spaceWasDown;
             _spaceWasDown = spaceDown;
 
-            if (pressedNow && bombCooldown.getElapsedTime().asSeconds() > 0.40f) {
-                bool doubleTap = (_lastSpaceTap.getElapsedTime().asSeconds() < 0.35f);
-                _lastSpaceTap.restart();
+            if (pressedNow) {
+                bool doubleTap = (_lastSpaceTap.getElapsedTime().asSeconds() < 0.45f);
+                _lastSpaceTap.restart();   // zawsze restart — liczymy czas od ostatniego tapa
 
                 if (doubleTap && canThrowBombs) {
-                    throwBomb(entities);
+                    throwBomb(entities);   // throw ignoruje bombCooldown
                 }
-                else {
-                    placeBomb(entities);
+                else if (bombCooldown.getElapsedTime().asSeconds() > 0.40f) {
+                    placeBomb(entities);   // normalny cooldown tylko dla stawiania
                 }
             }
         }
@@ -274,6 +274,18 @@ void Player::update( std::vector<std::unique_ptr<Entity>>& entities) {
                 }
                 continue; 
             }
+            if (canKickBombs) {
+                if (Bomb* bomb = dynamic_cast<Bomb*>(obj.get())) {
+                    if (bomb->isSolid() && !bomb->isBeingKicked()) {
+                        sf::Vector2f dir = {
+                            movement.x != 0.f ? (movement.x > 0 ? 8.f : -8.f) : 0.f,
+                            movement.y != 0.f ? (movement.y > 0 ? 8.f : -8.f) : 0.f
+                        };
+                        bomb->kick(dir);
+                        continue;
+                    }
+                }
+            }
 
             if (obj->isSolid()) {
                 sprite.move({ 0.f, -movement.y });
@@ -312,7 +324,8 @@ void Player::takeDamage(bool byPassGracePeriod) {
 void Player::addHp(int amount) {
     _maxHp += amount;   
     _hp += amount;
-    if (_hp < 1) _hp = 1;
+    if (_hp <= 1) _hp = 1;
+    if (_maxHp <= 1) _maxHp = 1;
 }
 
 void Player::addBomb(int amount) {
@@ -333,7 +346,8 @@ void Player::speedUp(float val) {
 }
 
 void Player::setHp(int val) {
-    _hp = val;
+	_hp = val;
+    if (_hp <= 1) _hp = 1;
 }
 
 void Player::setAnimState(CursedState state) {
@@ -344,18 +358,30 @@ void Player::setAnimState(CursedState state) {
 }
 void Player::addBombRange(int left, int right, int up, int down) {
     _currentBombStats.rangeLeft += left;
+    if(_currentBombStats.rangeLeft > 8) {
+        _currentBombStats.rangeLeft = 8;
+    }
     if (_currentBombStats.rangeLeft < 1) {
         _currentBombStats.rangeLeft=1;
     }
     _currentBombStats.rangeRight += right;
+    if (_currentBombStats.rangeRight > 8) {
+        _currentBombStats.rangeRight = 8;
+    }
     if (_currentBombStats.rangeRight  < 1) {
         _currentBombStats.rangeRight=1;
     }
     _currentBombStats.rangeUp += up;
+    if (_currentBombStats.rangeUp > 8) {
+        _currentBombStats.rangeLeft = 8;
+    }
     if (_currentBombStats.rangeUp < 1) {
         _currentBombStats.rangeUp=1;
     }
     _currentBombStats.rangeDown += down;
+    if (_currentBombStats.rangeDown > 8) {
+        _currentBombStats.rangeDown = 8;
+    }
     if (_currentBombStats.rangeDown  < 1) {
         _currentBombStats.rangeDown = 1;
     }
@@ -394,25 +420,32 @@ void Player::throwBomb(std::vector<std::unique_ptr<Entity>>& entities) {
 
     float landX = -1.f, landY = -1.f;
 
-    for (int i = 1; i <= 5; ++i) {
+    for (int i = 1; i <= 20; ++i) {
         float cx = baseX + _facingDir.x * i * ts;
         float cy = baseY + _facingDir.y * i * ts;
         sf::FloatRect tile({ cx, cy }, { ts, ts });
 
-        bool wall = false, blocked = false, hasCrate = false;
+        bool hasSolid = false;
+        bool hasBomb = false;
 
         for (const auto& obj : entities) {
             if (!tile.findIntersection(obj->getBounds())) continue;
-            if (dynamic_cast<Wall*>(obj.get())) { wall = true; break; }
-            if (dynamic_cast<Bomb*>(obj.get())) { blocked = true; break; }
-            if (dynamic_cast<Crate*>(obj.get())) { hasCrate = true; }
+            if (dynamic_cast<Wall*>(obj.get())) { hasSolid = true; break; }
+            if (dynamic_cast<Crate*>(obj.get())) { hasSolid = true; break; }
+            if (dynamic_cast<Bomb*>(obj.get())) { hasBomb = true; break; }
         }
 
-        if (wall || blocked) break;
-        if (!hasCrate) { landX = cx; landY = cy; }  
+        if (hasBomb) break;   // trafiliśmy w bombę — nie lądujemy
+
+        if (!hasSolid) {      // pierwszy wolny kafelek — lądujemy tutaj i kończymy
+            landX = cx;
+            landY = cy;
+            break;
+        }
+        // hasSolid == true: ściana lub skrzynka — przelatujemy dalej
     }
 
-    if (landX < 0.f) { placeBomb(entities); return; } 
+    if (landX < 0.f) return;  // nic nie znaleziono, anuluj
 
     auto bomb = std::make_unique<Bomb>(landX, landY, bombTexRef, explTexRef,
         _currentBombStats, bombSoundBuf, this);
@@ -422,4 +455,9 @@ void Player::throwBomb(std::vector<std::unique_ptr<Entity>>& entities) {
     currentState = PlayerState::PlacingBomb;
     actionTimer.restart();
     bombCooldown.restart();
+}
+void Player::addBombDamage(int val) {
+    _currentBombStats.damage += val;
+    if (_currentBombStats.damage > 3) _currentBombStats.damage = 3;
+    if (_currentBombStats.damage < 1) _currentBombStats.damage = 1;
 }

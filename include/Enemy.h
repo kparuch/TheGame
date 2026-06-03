@@ -16,7 +16,7 @@ enum class EnemyState {
 	Dead,//is dead
 	Fleeing 
 };
-enum class Difficulty { Normal, Hard };
+enum class Difficulty { Normal, Hard, Nightmare };
 class Enemy :public Entity {
 private:
 	sf::Sprite sprite;
@@ -50,17 +50,17 @@ private:
 	std::vector<sf::Vector2f> findEscapePath(int bombX, int bombY, const BombStats& stats,
 		const std::vector<std::unique_ptr<Entity>>& entities) const;
 	std::vector<sf::Vector2f> findSafePath(const std::vector<std::unique_ptr<Entity>>& entities) const;
-	int _maxHealth = 1;
+	
 	Difficulty _difficulty = Difficulty::Normal;
 	sf::Clock dangerTimer;
 	sf::Clock _curseHitTimer;
-	int ogHealth = 3;
+	int _maxHealth = 3;
 public:
 	Enemy(float x, float y, const sf::Texture& texture, const sf::Texture& bombTex, const sf::Texture& expTex, float visionRange, const sf::SoundBuffer &bombSound);
 	void update(std::vector<std::unique_ptr<Entity>>& entities) override;
 	sf::FloatRect getBounds() const override { return sprite.getGlobalBounds(); }
 	void draw(sf::RenderWindow& window) override;
-	void takeDamage();
+	void takeDamage(int damage);
 	bool isSolid() const override { return true; }
 	bool isDestroyed() const override { return toBeErased; }
 	void addBombRange(int left, int right, int up, int down);
@@ -72,5 +72,6 @@ public:
 	void setDifficulty(Difficulty d);
 	void takeCurseDamage();
 	int getHealth() const { return _health; }
-
+	int getMaxHealth() const { return _maxHealth; }
+	void addBombDamage(int newVal);
 };

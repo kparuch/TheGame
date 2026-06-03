@@ -36,11 +36,11 @@ private:
     void restartGame();
     void trigerCurse();
 
-    // --- Stan gry ---
+	//Game state flags
     bool gameOver = false;
     bool curseTrig = false;
 
-    // --- Level select / progresja ---
+    // --- Level select / progression ---
     int _currentLevel = 0;
     Difficulty _currentDifficulty = Difficulty::Normal;
     std::array<bool, 4> _levelUnlocked = { true, false, false, false };
@@ -65,6 +65,7 @@ private:
     void renderHUD();
     sf::Music menuMusic;
     std::unique_ptr<InfoScreen> infoScreen;
+    std::unordered_map<std::string, const sf::Texture*> infoIcons;
 public:
     Game();
     virtual ~Game();
