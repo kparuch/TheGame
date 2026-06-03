@@ -19,7 +19,7 @@ void InfoScreen::draw(sf::RenderWindow& window,
 {
     const sf::Vector2f wSize(window.getSize());
 
-    // ── kolory ──────────────────────────────────────────────────────────────
+    // ── colour ──────────────────────────────────────────────────────────────
     const sf::Color ink(35, 20, 5);
     const sf::Color header(90, 45, 10);
     const sf::Color faded(110, 90, 60);
@@ -27,7 +27,7 @@ void InfoScreen::draw(sf::RenderWindow& window,
     const sf::Color purple(100, 0, 130);
     const sf::Color sepCol(140, 110, 60, 150);
 
-    // ── pomocniki (działają w aktywnym view) ────────────────────────────────
+    // ── helpers  ────────────────────────────────
     auto drawRect = [&](float x, float y, float w, float h, sf::Color fill,
         sf::Color outline = sf::Color::Transparent, float thick = 0.f) {
             sf::RectangleShape r({ w, h });
@@ -62,18 +62,18 @@ void InfoScreen::draw(sf::RenderWindow& window,
             window.draw(t);
         };
 
-    // Rysuje ikonę pickupu (lub placeholder) w zadanej pozycji.
+
     auto drawIcon = [&](const std::string& name, float x, float y) {
         auto it = icons.find(name);
         if (it != icons.end() && it->second) {
             sf::Sprite sp(*it->second);
-            // wytnij pierwszą klatkę — zakładam że spritesheet jest poziomy (4 klatki w rzędzie)
+        
             auto ts = it->second->getSize();
-            unsigned frameW = ts.x / 2;   // szerokość jednej klatki
-            unsigned frameH = ts.y / 2;        // pełna wysokość
+            unsigned frameW = ts.x / 2;   // 
+            unsigned frameH = ts.y / 2;        //
             sp.setTextureRect(sf::IntRect({ 0, 0 }, { (int)frameW, (int)frameH }));
 
-            // skaluj do ICON_SIZE bazując na pojedynczej klatce
+            //scale
             float sc = ICON_SIZE / static_cast<float>(std::max(frameW, frameH));
             sp.setScale({ sc, sc });
             sp.setPosition({ x, y });
@@ -94,9 +94,7 @@ void InfoScreen::draw(sf::RenderWindow& window,
         }
         };
 
-    // ════════════════════════════════════════════════════════════════════════
-    // WARSTWA 1 — tło (default view)
-    // ════════════════════════════════════════════════════════════════════════
+
     window.clear(sf::Color(10, 8, 5));
 
     // monitor
@@ -123,12 +121,7 @@ void InfoScreen::draw(sf::RenderWindow& window,
     }
     drawLine(260.f, 168.f, 1400.f, sf::Color(100, 70, 30));
 
-    // ════════════════════════════════════════════════════════════════════════
-    // WARSTWA 2 — scrollowalna treść
-    //
-    // Viewport na ekranie: x=[110, 1810], y=[172, 940]
-    // sf::View clipuje automatycznie — nic nie wychodzi poza ten prostokąt.
-    // ════════════════════════════════════════════════════════════════════════
+
     constexpr float VP_LEFT = 110.f;
     constexpr float VP_TOP = 172.f;
     constexpr float VP_W = 1700.f;
@@ -172,27 +165,27 @@ void InfoScreen::draw(sf::RenderWindow& window,
         { "???",       "shrouded in mystery, its function: De.DOS_ERROR",      purple },
     } };
 
-    constexpr float ROW_H = 70.f;   // wysokość wiersza z ikoną
+	constexpr float ROW_H = 70.f;   //height of one pickup row (icon + text)
     constexpr float PU_START = 408.f;
 
     for (int i = 0; i < (int)pickups.size(); ++i) {
         const float py = PU_START + i * ROW_H;
 
-        // ikona wyśrodkowana pionowo w wierszu
+        
         drawIcon(pickups[i].name, 240.f, py + (ROW_H - ICON_SIZE) / 2.f);
 
-        // nazwa pickupu
+        // pickup name
         {
             sf::Text nt(font, pickups[i].name, 21);
             nt.setFillColor(pickups[i].nameCol);
             nt.setPosition({ 320.f, py + 4.f });
             window.draw(nt);
         }
-        // opis (mniejszy, pod nazwą)
+		// description
         drawText(pickups[i].desc, 320.f, py + 27.f, 18, faded);
     }
 
-    // obliczamy gdzie kończy się sekcja pickupów
+    
     const float afterPU = PU_START + (int)pickups.size() * ROW_H + 10.f;
     drawLine(230.f, afterPU, 1400.f, sepCol);
 
@@ -206,7 +199,7 @@ void InfoScreen::draw(sf::RenderWindow& window,
     drawText("-  Your bombs will also damage you.",
         230.f, tipsY + 114.f, 21, red);
 
-    // ── sekretne pole ────────────────────────────────────────────────────────
+    // ── secret area ────────────────────────────────────────────────────────
     const float secretY = tipsY + 158.f;
     drawRect(228.f, secretY, 1400.f, 92.f,
         sf::Color(60, 0, 80, 60),
@@ -216,13 +209,11 @@ void InfoScreen::draw(sf::RenderWindow& window,
     drawText("?  As it was foretold, four pickups were made to alter the game, you will only see here two...",
         238.f, secretY + 44.f, 21, purple);
 
-    // ════════════════════════════════════════════════════════════════════════
-    // WARSTWA 3 — powrót do default view: scrollbar + stopka
-    // ════════════════════════════════════════════════════════════════════════
+ 
     window.setView(window.getDefaultView());
 
     // ── scrollbar ────────────────────────────────────────────────────────────
-    // Rysujemy tylko gdy content wykracza poza viewport
+    
     if (MAX_SCROLL > 0.f) {
         constexpr float SB_X = 1806.f;
         constexpr float SB_TOP = VP_TOP;
@@ -235,12 +226,10 @@ void InfoScreen::draw(sf::RenderWindow& window,
         drawRect(SB_X, thumbY, 5.f, thumbH, sf::Color(130, 100, 50, 190));
     }
 
-    // ── przykryj krawędź papieru pod tytułem (żeby treść nie wchodziła w tytuł) ──
-    // Viewport view już clipuje od VP_TOP=172, więc to tylko kosmetyka —
-    // zakrywamy linię papieru między y=90 a y=172.
+
     drawRect(110.f, 90.f, 1700.f, VP_TOP - 90.f, sf::Color(232, 220, 185));
 
-    // ── ponownie tytuł + linia nad scrollem (zawsze na wierzchu) ─────────────
+ 
     {
         sf::Text title(font, "SOYMAN II: THE WAY OF THE BOMB", 48);
         title.setFillColor(sf::Color(40, 25, 10));
@@ -253,10 +242,8 @@ void InfoScreen::draw(sf::RenderWindow& window,
     }
     drawLine(260.f, 168.f, 1400.f, sf::Color(100, 70, 30));
 
-    // ── przykryj dolną krawędź papieru (żeby treść nie leciała pod stopkę) ──
     drawRect(110.f, 940.f, 1700.f, 50.f, sf::Color(232, 220, 185));
-
-    // ── stopka ───────────────────────────────────────────────────────────────
+//footer    
     drawLine(110.f, 940.f, 1700.f, sf::Color(100, 70, 30));
     drawTextCentered("scroll with mouse wheel click anywhere to return to main menu",
         952.f, 20, faded);
