@@ -625,9 +625,9 @@ void Game::loadLevel(int levelIndex, Difficulty diff) {
 					texHandler.get("normPlayer"), texHandler.get("bomb"),
 					texHandler.get("explosion"), texHandler.get("cursedPlayer"),
 					explosionSound);
+
 				if (diff == Difficulty::Hard) {
-					player->setHp(2);
-					
+					player->setHp(3);
 					player->setCanKick(true);
 					player->addBomb(1);
 				}

@@ -20,10 +20,10 @@ enum class PlayerState {
 class Player : public Entity {
 private:
 	sf::Sprite sprite;
-	float _speed=3.5f;
+	float _speed=4.15f;
 	int _bombAmount=1;
 	BombStats _currentBombStats;
-	int _hp=3;
+	int _hp=5;
 	PlayerState currentState;
 	int frameWidth;
 	int frameHeight;
@@ -38,7 +38,7 @@ private:
 	sf::Clock curseTime;
 	sf::Clock debuffTime;
 	sf::Clock idleTimer;
-	float _ogSpeed = 5.5f;
+	float _ogSpeed = 4.15f;
 	sf::Vector2f lastPos;
 	sf::Texture curseTex;
 	CursedState curseState;
