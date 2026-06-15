@@ -1,11 +1,13 @@
 <h1>Game made with love <3 </h1>
 
-This game will feature the following:
+This game features the following:
 
-- 1 Player vs 3 bots [DONE] 
-- 2 / 3 difficulty settings [DONE]
-- Pickup mechanic [DONE]
-- there hidden easter eggs... more will be added
+- 1 Player vs 1,2,3 bots 
+- 3 difficulty settings, 3rd created for the true masterminds of the game, good luck
+- Pickup mechanic 
+- Easter eggs
+
+
 
 Enjoy!
 
