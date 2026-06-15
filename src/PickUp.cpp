@@ -23,7 +23,7 @@ void Pickup::updateAnimation() {
 void Pickup::update(std::vector<std::unique_ptr<Entity>>& entites) {
     if (isPickedUp)return;
     updateAnimation();
-
+    //each pickup was drawn in a way that each animation is the same, each sprite is a square with 4 frames 
     for (auto& obj : entites) {
         if (Player* p = dynamic_cast<Player*>(obj.get())) {
             if (sprite.getGlobalBounds().findIntersection(p->getBounds())) {

@@ -60,12 +60,16 @@ private:
     sf::SoundBuffer deathSoundBuf;
     sf::Sound deathSound;
     sf::Music bgMusic;
+    std::optional<sf::Sprite>hudDecorSprite;
     std::vector<std::string> playlist;
     int currentTrackId = 0;
     void renderHUD();
     sf::Music menuMusic;
     std::unique_ptr<InfoScreen> infoScreen;
     std::unordered_map<std::string, const sf::Texture*> infoIcons;
+    sf::Clock _levelTimer;
+    float _levelDuration = 180.f; 
+    int _score = 0;
 public:
     Game();
     virtual ~Game();
