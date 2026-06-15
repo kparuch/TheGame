@@ -168,13 +168,13 @@ void Player::update( std::vector<std::unique_ptr<Entity>>& entities) {
 
             if (pressedNow) {
                 bool doubleTap = (_lastSpaceTap.getElapsedTime().asSeconds() < 0.45f);
-                _lastSpaceTap.restart();   // zawsze restart — liczymy czas od ostatniego tapa
+				_lastSpaceTap.restart();   //always restart, so we can check for double tap next time
 
                 if (doubleTap && canThrowBombs) {
-                    throwBomb(entities);   // throw ignoruje bombCooldown
+					throwBomb(entities);   // throw overrides normal cooldown for placing bombs
                 }
                 else if (bombCooldown.getElapsedTime().asSeconds() > 0.40f) {
-                    placeBomb(entities);   // normalny cooldown tylko dla stawiania
+					placeBomb(entities);   // classic cooldown for placing bombs
                 }
             }
         }
@@ -388,6 +388,7 @@ void Player::addBombRange(int left, int right, int up, int down) {
 }
 void Player::placeBomb(std::vector<std::unique_ptr<Entity>>& entities) {
     int active = 0;
+	//checks if the player is allowed to place another bomb, if not, it returns
     for (const auto& obj : entities)
         if (Bomb* b = dynamic_cast<Bomb*>(obj.get()))
             if (b->getOwner() == this) active++;
@@ -396,6 +397,15 @@ void Player::placeBomb(std::vector<std::unique_ptr<Entity>>& entities) {
     float ts = 64.f;
     float gx = std::round(sprite.getPosition().x / ts) * ts;
     float gy = std::round(sprite.getPosition().y / ts) * ts;
+    //prevents bomb clamping
+    sf::FloatRect tile({ gx, gy }, { ts, ts });
+    for (const auto& obj : entities) {
+        if (Bomb* b = dynamic_cast<Bomb*>(obj.get())) {
+            if (tile.findIntersection(b->getBounds())) {
+                return;
+            }
+        }
+    }
 
     auto bomb = std::make_unique<Bomb>(gx, gy, bombTexRef, explTexRef,
         _currentBombStats, bombSoundBuf, this);
@@ -423,6 +433,9 @@ void Player::throwBomb(std::vector<std::unique_ptr<Entity>>& entities) {
     for (int i = 1; i <= 20; ++i) {
         float cx = baseX + _facingDir.x * i * ts;
         float cy = baseY + _facingDir.y * i * ts;
+		if (cx < 0.f || cy < 0.f || cx >= 1088.f || cy >= 832.f) { //since each map is 17x13 tiles, each tile is 64px, the max coordinates are 1088 and 832 respectively
+			break;
+        }
         sf::FloatRect tile({ cx, cy }, { ts, ts });
 
         bool hasSolid = false;
@@ -435,17 +448,17 @@ void Player::throwBomb(std::vector<std::unique_ptr<Entity>>& entities) {
             if (dynamic_cast<Bomb*>(obj.get())) { hasBomb = true; break; }
         }
 
-        if (hasBomb) break;   // trafiliśmy w bombę — nie lądujemy
+		if (hasBomb) break;   // empty tile, but bomb is in the way -> skip to next tile
 
-        if (!hasSolid) {      // pierwszy wolny kafelek — lądujemy tutaj i kończymy
+        if (!hasSolid) {      // first empty tile -> landing spot 
             landX = cx;
             landY = cy;
             break;
         }
-        // hasSolid == true: ściana lub skrzynka — przelatujemy dalej
+        // hasSolid == true: bombs keeps on flying
     }
 
-    if (landX < 0.f) return;  // nic nie znaleziono, anuluj
+	if (landX < 0.f) return;  // nothing was found, can't throw bomb
 
     auto bomb = std::make_unique<Bomb>(landX, landY, bombTexRef, explTexRef,
         _currentBombStats, bombSoundBuf, this);

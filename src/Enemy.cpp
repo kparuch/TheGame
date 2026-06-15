@@ -8,7 +8,7 @@
 #include "Bomb.h"
 #include <cmath>
 #include "ExplosionArea.h"
-
+#include <random>
 
 
 struct GridPoint {
@@ -49,24 +49,37 @@ void Enemy::decideAction(const std::vector<std::unique_ptr<Entity>>& entities) {
 		return;
 	}
 	sf::Vector2f toPlayer = targetPlayer->getPosition() - sprite.getPosition();
-	
 	float distance = std::sqrt(toPlayer.x * toPlayer.x + toPlayer.y * toPlayer.y);
 	float tileSize = 64.0f;
 	float distanceTiles = distance / tileSize;
 
+	int activeBombs = 0;
+	for (const auto& obj : entities) {
+		if (Bomb* b = dynamic_cast<Bomb*>(obj.get()))
+			if (b->getOwner() == this) activeBombs++;
+	}
+	bool canPlaceBomb = activeBombs < _bombAmount;
+
 	bool canHit = canBombHitPlayer(targetPlayer->getPosition(), entities);
-	// Normal: 60% 
 	if (_difficulty == Difficulty::Normal) {
 		canHit = canHit && (rand() % 100 < 60);
 	}
-	if (canHit && bombCooldown.getElapsedTime().asSeconds() > 0.5f) {
-		currentEnemyState = EnemyState::PlacingBomb;
-		while (!path.empty()) path.pop();
-		updateAnimation();
-		return;
+	if (canHit && canPlaceBomb && bombCooldown.getElapsedTime().asSeconds() > 0.5f) {
+		int gridX = static_cast<int>(std::round(sprite.getPosition().x / tileSize));
+		int gridY = static_cast<int>(std::round(sprite.getPosition().y / tileSize));
+
+		auto escape = findEscapePath(gridX, gridY, _currentBombStats, entities);
+		if (!escape.empty()) {
+			currentEnemyState = EnemyState::PlacingBomb;
+			while (!path.empty()) path.pop();
+			updateAnimation();
+			return;
+		}
+		
 	}
 	if (distanceTiles <= _visionRange) {
-		currentEnemyState = EnemyState::Hunting;
+		int roll = rand() % 100;
+		currentEnemyState = (roll < 80) ? EnemyState::Hunting : EnemyState::Looting; 
 	}
 	else {
 		int roll = rand() % 100;
@@ -149,30 +162,24 @@ void Enemy::decideAction(const std::vector<std::unique_ptr<Entity>>& entities) {
 		if (foundCrateToBomb && bombCooldown.getElapsedTime().asSeconds() > 0.5f) {
 			currentEnemyState = EnemyState::PlacingBomb;
 		}
-		else {
-			
-			int randDir = rand() % 4;
-			int targetGridX = static_cast<int>(sprite.getPosition().x / tileSize) + dirs[randDir].x;
-			int targetGridY = static_cast<int>(sprite.getPosition().y / tileSize) + dirs[randDir].y;
-			sf::FloatRect targetTile({ targetGridX * tileSize, targetGridY * tileSize }, { tileSize, tileSize });
+		std::vector<int> order = { 0,1,2,3 };
+		std::shuffle(order.begin(), order.end(), std::default_random_engine(rand()));
 
-			bool hitWall = false;
-			for (const auto& ent : entities) {
-				if (ent.get() == this || !ent->isSolid() || dynamic_cast<Player*>(ent.get())) continue;
-				if (targetTile.findIntersection(ent->getBounds())) {
-					hitWall = true;
-					break;
-				}
-			}
+		bool moved = false;
+		for (int idx : order) {
+			int targetGridX = static_cast<int>(sprite.getPosition().x / tileSize) + dirs[idx].x;
+			int targetGridY = static_cast<int>(sprite.getPosition().y / tileSize) + dirs[idx].y;
 
-			if (!hitWall) {
+			if (!isTileSolid(targetGridX, targetGridY, entities)
+				&& !isTileDangerous(targetGridX, targetGridY, entities))
+			{
 				path.push({ targetGridX * tileSize, targetGridY * tileSize });
 				currentEnemyState = EnemyState::Moving;
-			}
-			else {
-				currentEnemyState = EnemyState::Idle;
+				moved = true;
+				break;
 			}
 		}
+		if (!moved) currentEnemyState = EnemyState::Idle;
 
 	}
 	
@@ -203,7 +210,7 @@ void Enemy::update(std::vector<std::unique_ptr<Entity>>& entities) {
 		for (auto& obj : entities) {
 			if (ExplosionArea* fire = dynamic_cast<ExplosionArea*>(obj.get())) {
 				if (sprite.getGlobalBounds().findIntersection(fire->getBounds())) {
-					takeDamage(fire->getDamage());  // zamiast takeDamage()
+					takeDamage(fire->getDamage());  
 					break;
 				}
 			}
@@ -218,16 +225,18 @@ void Enemy::update(std::vector<std::unique_ptr<Entity>>& entities) {
 		int gy = static_cast<int>(std::round(sprite.getPosition().y / 64.f));
 
 		if (isTileDangerous(gx, gy, entities)) {
-			bool shouldFlee = false;
 
-			if (_difficulty != Difficulty::Normal) {
-				shouldFlee = true;  
+			float reactionDelay;
+			int fleeChance;
+			switch (_difficulty) {
+			case Difficulty::Normal:    reactionDelay = 0.7f;  fleeChance = 65;  break;
+			case Difficulty::Hard:      reactionDelay = 0.35f; fleeChance = 85;  break;
+			default: /* Nightmare */    reactionDelay = 0.15f; fleeChance = 95;  break;
 			}
-			else {
-				// normal diff, 65% chance for fleeing after 0.7s of being in danger
-				if (dangerTimer.getElapsedTime().asSeconds() > 0.7f) {
-					shouldFlee = (rand() % 100) < 65;
-				}
+
+			bool shouldFlee = false;
+			if (dangerTimer.getElapsedTime().asSeconds() > reactionDelay) {
+				shouldFlee = (rand() % 100) < fleeChance;
 			}
 
 			if (shouldFlee) {
@@ -306,11 +315,8 @@ void Enemy::update(std::vector<std::unique_ptr<Entity>>& entities) {
 				int gridX = static_cast<int>(std::round(sprite.getPosition().x / 64.f));
 				int gridY = static_cast<int>(std::round(sprite.getPosition().y / 64.f));
 
-				
 				auto escape = findEscapePath(gridX, gridY, _currentBombStats, entities);
-
 				if (escape.empty()) {
-					
 					currentEnemyState = EnemyState::Idle;
 					updateAnimation();
 					break;
@@ -324,7 +330,7 @@ void Enemy::update(std::vector<std::unique_ptr<Entity>>& entities) {
 				while (!path.empty()) path.pop();
 				for (const auto& p : escape) path.push(p);
 
-				currentEnemyState = EnemyState::Fleeing; 
+				currentEnemyState = EnemyState::Fleeing;
 				actionTimer.restart();
 			}
 			else {
@@ -725,13 +731,13 @@ bool Enemy::hasAdjacentCrate(const std::vector<std::unique_ptr<Entity>>& entitie
 }
 void Enemy::setDifficulty(Difficulty d) {
 	_difficulty = d;
-	if (d == Difficulty::Normal) {
+	if (d == Difficulty::Normal) {//basically easy mode, if you lose you are punished badly (score loss is HUGE) but the enemy is slower, has less health, worse bomb stats and can see player from shorter distance, should be winnable EASILY with basic strategy and a bit of luck
 		_speed = 3.5f;
 		actionDurr = 1.65f;   // takes more time to think and place bomb, giving player more time to react
 		_visionRange = 6.0f;
 		_currentBombStats = { 1, 1, 1, 1 };  // players range 
 	}
-	else if (d == Difficulty::Hard) {
+	else if (d == Difficulty::Hard) { //fair difficulty, enemy is faster, has more health, better bomb stats and can see player from farther away, should be winnable with good strategy and a bit of luck
 		_speed = 5.5f;
 		actionDurr = 0.65f;
 		_visionRange = 12.0f;
@@ -740,7 +746,7 @@ void Enemy::setDifficulty(Difficulty d) {
 		_currentBombStats = { 2, 2, 2, 2 };
 		_currentBombStats.damage = 2;
 	}
-	else if (d == Difficulty::Nightmare) { //to be implemented, secret option
+	else if (d == Difficulty::Nightmare) { //most difficult, enemy is faster, has more health, better bomb stats and can see player from farther away, not sure if its winnable but good luck i guess lol
 		_speed = 7.5f;
 		actionDurr = 0.35f;
 		_visionRange = 20.0f;

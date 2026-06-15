@@ -132,7 +132,7 @@ void Bomb::update(std::vector<std::unique_ptr<Entity>>& entities) {
                         if (dynamic_cast<Crate*>(obj.get())) {
                             if (_isLaser) {
                                 spawnFire = true;
-                                stopFire = false;   // laser przebija przez skrzynki
+								stopFire = false;   //alters games mechanics, laser can go through crates and destroy them without stopping the fire
                             }
                             else {
                                 

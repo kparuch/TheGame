@@ -44,7 +44,7 @@ Game::Game(): gameOverText(mainFont, "GAME OVER", 120),deathSound(deathSoundBuf)
 	texHandler.load("enemy", "assets/enemyVer2.png");
 	texHandler.load("pchlarz", "assets/pchlarz.png");
 	texHandler.load("pchlarz?", "assets/mythicalPchlarz.png");
-
+	texHandler.load("decor", "assets/loadingBg.png");
 	mainFont.openFromFile("assets/font/castellarReg.ttf");
 
 	menuMusic.openFromFile("assets/sounds/menuMusic.mp3");
@@ -86,7 +86,14 @@ Game::Game(): gameOverText(mainFont, "GAME OVER", 120),deathSound(deathSoundBuf)
 		{"???",              &texHandler.get("???")},
 	// "IAMERROR"
 	};
+	hudDecorSprite.emplace(texHandler.get("decor"));
+	
 
+	sf::FloatRect db = hudDecorSprite->getLocalBounds();
+	hudDecorSprite->setPosition({
+		1920.f - db.size.x - 20.f,   
+		20.f
+		});
 
 
 	sf::FloatRect textRect = gameOverText.getLocalBounds();
@@ -511,6 +518,11 @@ void Game::checkWinCondition() {
 		}
 		return;                                    
 	}
+	float remaining = std::max(0.f, _levelDuration - _levelTimer.getElapsedTime().asSeconds());
+	if (remaining <= 0.f) {
+		trigerCurse();
+		return;
+	}
 
 	// check if any enemies remain
 	bool hasEnemy = false;
@@ -520,7 +532,19 @@ void Game::checkWinCondition() {
 	if (!hasEnemy) {
 		_levelComplete = true;
 		_levelCompleteTimer.restart();
-
+		float remaining = std::max(0.f, _levelDuration - _levelTimer.getElapsedTime().asSeconds());
+		
+		if (_currentDifficulty == Difficulty::Nightmare)
+			_score += static_cast<int>(remaining) * 450;
+		if (_currentDifficulty == Difficulty::Hard) {
+			_score += static_cast<int>(remaining) * 250;
+		}
+		else
+		{
+			_score += static_cast<int>(remaining) * 50;
+		}
+		
+	
 		if (_currentDifficulty == Difficulty::Hard) {
 			_levelBeatenHard[_currentLevel] = true;
 			if (_currentLevel + 1 < 3)
@@ -536,6 +560,7 @@ void Game::checkWinCondition() {
 }
 
 void Game::loadLevel(int levelIndex, Difficulty diff) {
+	_levelTimer.restart();
 	static const std::array<std::vector<std::string>, 4> maps = { {
 			// Level 1 - the basics
 			{
@@ -660,7 +685,17 @@ void Game::trigerCurse() {
 	
 	deathSound.setVolume(50.f);
 	deathSound.play();
-	
+	float remaining = std::max(0.f, _levelDuration - _levelTimer.getElapsedTime().asSeconds());
+	if (_currentDifficulty == Difficulty::Normal)
+		_score -= static_cast<int>(remaining) * 450;
+	if (_currentDifficulty == Difficulty::Hard)
+	{
+		_score -= static_cast<int>(remaining) * 250;
+	}
+	else
+	{
+		_score -= static_cast<int>(remaining) * 50;
+	}
 	int totRows = 5;
 	int totCols = 5;
 	int tileSize = 256;
@@ -732,11 +767,18 @@ void Game::renderHUD() {
 		};
 
 	// Header
-	sf::Text header(mainFont, "-- HUD --", 24);
+	sf::Text header(mainFont, "STATS:", 24);
 	header.setFillColor(sf::Color(220, 220, 100));
-	header.setPosition({ hudX, 20.f });
+	header.setPosition({ hudX, 80.f });
+	curY = 80.f;
 	window.draw(header);
+	if (hudDecorSprite) window.draw(*hudDecorSprite);
+	sf::RectangleShape separator({ barW + 64.f, 2.f });
+	separator.setPosition({ hudX, curY + 45.f });
+	separator.setFillColor(sf::Color(120, 120, 120));
+	window.draw(separator);
 
+	curY += 80.f;
 	// Player
 	for (const auto& obj : gameObjs) {
 		if (Player* p = dynamic_cast<Player*>(obj.get())) {
@@ -747,20 +789,20 @@ void Game::renderHUD() {
 			bombInfo.setFillColor(sf::Color::White);
 			bombInfo.setPosition({ hudX, curY });
 			window.draw(bombInfo);
-			curY += 30.f;
+			curY += 35.f;
 
 			// Range
 			sf::Text rangeInfo(mainFont, "RANGE: " + std::to_string(p->getBombRange()), 20);
 			rangeInfo.setFillColor(sf::Color(255, 180, 80));
 			rangeInfo.setPosition({ hudX, curY });
 			window.draw(rangeInfo);
-			curY += 44.f;
+			curY += 35.f;
 
 			sf::Text dmgInfo(mainFont, "DMG: " + std::to_string(p->getBombDamage()), 20);
 			dmgInfo.setFillColor(sf::Color(255, 80, 80));
 			dmgInfo.setPosition({ hudX, curY });
 			window.draw(dmgInfo);
-			curY += 44.f;
+			curY += 35.f;
 
 			break;
 		}
@@ -781,7 +823,25 @@ void Game::renderHUD() {
 				sf::Color(220, 60, 60));
 		}
 	}
+		float elapsed = _levelTimer.getElapsedTime().asSeconds();
+	float remaining = std::max(0.f, _levelDuration - elapsed);
+	int mins = static_cast<int>(remaining) / 60;
+	int secs = static_cast<int>(remaining) % 60;
+
+	std::string timeStr = (mins < 10 ? "0" : "") + std::to_string(mins) + ":" +
+		(secs < 10 ? "0" : "") + std::to_string(secs);
+
+	sf::Text timeText(mainFont, "TIME: " + timeStr, 24);
+	timeText.setFillColor(remaining <= 30.f ? sf::Color::Red : sf::Color::White);
+	timeText.setPosition({ hudX, 20.f });
+	window.draw(timeText);
+
+	sf::Text scoreText(mainFont, "SCORE: " + std::to_string(_score), 24);
+	scoreText.setFillColor(sf::Color(220, 220, 100));
+	scoreText.setPosition({ hudX, 55.f });
+	window.draw(scoreText);
 }
+
 void Game::saveProgress() {
 	std::ofstream f("save.dat");
 	if (!f) return;
